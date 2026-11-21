@@ -1,24 +1,11 @@
 import { useRef, useState, type ChangeEvent } from "react";
-import {
-  CheckIcon,
-  EyeIcon,
-  MailIcon,
-  PlusIcon,
-  Trash2Icon,
-  XIcon,
-} from "lucide-react";
+import { CheckIcon, EyeIcon, MailIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
 
 import { CockpitHeader } from "@/components/CockpitHeader";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -65,21 +52,8 @@ const berichtAlsText = (abschnitte: BerichtAbschnitt[]) =>
   abschnitte.map(({ titel, text }) => `${titel}\n${text}`).join("\n\n");
 
 const KEINE_AUSWAHL = "keine-auswahl";
-const PHASEN = [
-  "Einrichtung",
-  "Rohbau",
-  "Dach/Fassade",
-  "Ausbau",
-  "Ausrüstung",
-  "Außenanlagen",
-];
-const GEWERKE = [
-  "Betonarbeiten",
-  "Mauerarbeiten",
-  "Stahlbau",
-  "Holzbau",
-  "Abdichtung",
-];
+const PHASEN = ["Einrichtung", "Rohbau", "Dach/Fassade", "Ausbau", "Ausrüstung", "Außenanlagen"];
+const GEWERKE = ["Betonarbeiten", "Mauerarbeiten", "Stahlbau", "Holzbau", "Abdichtung"];
 
 type Lieferant = {
   id: string;
@@ -107,8 +81,7 @@ const LIEFERANTEN_MOCK: Lieferant[] = [
     id: "l-3",
     titel: "Stahlhandel Obermaier",
     beschreibung: "Bewehrungsstahl BSt 500 · Rahmenvertrag",
-    vorschau:
-      "Nächste Lieferung: Mo 07:00, 4,2 t für Abschnitt C.\nEngpass bis KW 49 gemeldet.",
+    vorschau: "Nächste Lieferung: Mo 07:00, 4,2 t für Abschnitt C.\nEngpass bis KW 49 gemeldet.",
   },
   {
     id: "l-4",
@@ -197,8 +170,7 @@ const formatUhrzeit = (stunde: number) => {
 };
 
 /** Round, tinted icon buttons: green confirms, red removes. */
-const ICON_GRUEN =
-  "bg-green-100 text-green-700 hover:bg-green-200 hover:text-green-800";
+const ICON_GRUEN = "bg-green-100 text-green-700 hover:bg-green-200 hover:text-green-800";
 const ICON_ROT = "bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700";
 
 function ListenEintrag({ titel, status }: { titel: string; status: string }) {
@@ -218,25 +190,20 @@ function TermineListe() {
       </CardHeader>
       <ScrollArea className="min-h-0 flex-1">
         <CardContent className="flex flex-col gap-2">
-          {TERMINE_HEUTE_MOCK.map(
-            ({ id, titel, startStunde, dauerStunden, eigen }) => (
-              <div
-                key={id}
-                className="flex items-center gap-3 rounded-xl bg-background p-3"
-              >
-                <span className="w-14 shrink-0 text-sm font-medium tabular-nums">
-                  {formatUhrzeit(startStunde)}
+          {TERMINE_HEUTE_MOCK.map(({ id, titel, startStunde, dauerStunden, eigen }) => (
+            <div key={id} className="flex items-center gap-3 rounded-xl bg-background p-3">
+              <span className="w-14 shrink-0 text-sm font-medium tabular-nums">
+                {formatUhrzeit(startStunde)}
+              </span>
+              <div className="flex min-w-0 flex-col">
+                <span className="text-sm">{titel}</span>
+                <span className="text-xs text-muted-foreground">
+                  bis {formatUhrzeit(startStunde + dauerStunden)} Uhr ·{" "}
+                  {eigen ? "Eigener Termin" : "Fremdgewerk"}
                 </span>
-                <div className="flex min-w-0 flex-col">
-                  <span className="text-sm">{titel}</span>
-                  <span className="text-xs text-muted-foreground">
-                    bis {formatUhrzeit(startStunde + dauerStunden)} Uhr ·{" "}
-                    {eigen ? "Eigener Termin" : "Fremdgewerk"}
-                  </span>
-                </div>
               </div>
-            ),
-          )}
+            </div>
+          ))}
         </CardContent>
       </ScrollArea>
     </Card>
@@ -250,9 +217,7 @@ function AufgabenListe() {
   const aufgabeUmschalten = (id: number) =>
     setAufgaben((aktuell) =>
       aktuell.map((aufgabe) =>
-        aufgabe.id === id
-          ? { ...aufgabe, erledigt: !aufgabe.erledigt }
-          : aufgabe,
+        aufgabe.id === id ? { ...aufgabe, erledigt: !aufgabe.erledigt } : aufgabe,
       ),
     );
 
@@ -262,10 +227,7 @@ function AufgabenListe() {
   const aufgabeHinzufuegen = () => {
     const titel = neueAufgabe.trim();
     if (!titel) return;
-    setAufgaben((aktuell) => [
-      ...aktuell,
-      { id: Date.now(), titel, erledigt: false },
-    ]);
+    setAufgaben((aktuell) => [...aktuell, { id: Date.now(), titel, erledigt: false }]);
     setNeueAufgabe("");
   };
 
@@ -278,10 +240,7 @@ function AufgabenListe() {
         <ScrollArea className="-mr-3 min-h-0 flex-1">
           <ul className="flex flex-col gap-2 pr-3">
             {aufgaben.map(({ id, titel, erledigt }) => (
-              <li
-                key={id}
-                className="flex items-start gap-3 rounded-xl bg-background p-3"
-              >
+              <li key={id} className="flex items-start gap-3 rounded-xl bg-background p-3">
                 <Checkbox
                   id={`aufgabe-${id}`}
                   className="mt-0.5"
@@ -305,9 +264,7 @@ function AufgabenListe() {
               </li>
             ))}
             {aufgaben.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                Keine Aufgaben vorhanden.
-              </p>
+              <p className="text-sm text-muted-foreground">Keine Aufgaben vorhanden.</p>
             )}
           </ul>
         </ScrollArea>
@@ -361,21 +318,14 @@ function MeldungsListe({
     <section className="flex flex-col gap-2">
       <h2 className="text-sm font-semibold text-primary">{ueberschrift}</h2>
       <Separator />
-      {meldungen.length === 0 && (
-        <p className="text-sm text-muted-foreground">Keine Meldungen.</p>
-      )}
+      {meldungen.length === 0 && <p className="text-sm text-muted-foreground">Keine Meldungen.</p>}
       {meldungen.map((meldung) => {
         const { id, content, attachments } = meldung;
         const titel = anzeigeTitel(meldung);
-        const bilder = attachments.filter(
-          (anhang) => anhang.typ === "bild" && anhang.url,
-        );
+        const bilder = attachments.filter((anhang) => anhang.typ === "bild" && anhang.url);
         const aufgeklappt = aufgeklappteId === id;
         return (
-          <div
-            key={id}
-            className="flex flex-col gap-3 rounded-xl bg-background p-3.5"
-          >
+          <div key={id} className="flex flex-col gap-3 rounded-xl bg-background p-3.5">
             <div className="flex items-center justify-between gap-2">
               <button
                 type="button"
@@ -399,9 +349,7 @@ function MeldungsListe({
             </div>
             {aufgeklappt && (
               <>
-                <p className="text-sm whitespace-pre-line text-muted-foreground">
-                  {content}
-                </p>
+                <p className="text-sm whitespace-pre-line text-muted-foreground">{content}</p>
                 {bilder.length > 0 && (
                   <ul className="grid grid-cols-3 gap-2">
                     {bilder.map((bild) => (
@@ -440,11 +388,7 @@ function MeldungsListe({
                     </>
                   )}
                   <Button variant="outline" asChild>
-                    <a
-                      href={`${MELDUNG_WORKFLOW_PFAD}?id=${encodeURIComponent(id)}`}
-                    >
-                      Bearbeiten
-                    </a>
+                    <a href={`${MELDUNG_WORKFLOW_PFAD}?id=${encodeURIComponent(id)}`}>Bearbeiten</a>
                   </Button>
                 </div>
               </>
@@ -457,26 +401,18 @@ function MeldungsListe({
 }
 
 export function Cockpit() {
-  const [aufgeklappteMeldungId, setAufgeklappteMeldungId] = useState<
-    string | null
-  >("m-1");
+  const [aufgeklappteMeldungId, setAufgeklappteMeldungId] = useState<string | null>("m-1");
   const [aktivePhase, setAktivePhase] = useState(PHASEN[1] ?? "");
   const [aktivesGewerk, setAktivesGewerk] = useState(GEWERKE[1] ?? "");
   const [offenerVertragId, setOffenerVertragId] = useState<string | null>(null);
 
-  const {
-    meldungen,
-    fehler: meldungenFehler,
-    aendere: aendereMeldung,
-  } = useMeldungen();
+  const { meldungen, fehler: meldungenFehler, aendere: aendereMeldung } = useMeldungen();
   const anstehend = meldungen.filter(({ status }) => status === "anstehend");
-  const abgeschlossen = meldungen.filter(
-    ({ status }) => status === "abgeschlossen",
+  const abgeschlossen = meldungen.filter(({ status }) => status === "abgeschlossen");
+  const [berichtAbschnitte, setBerichtAbschnitte] = useState<BerichtAbschnitt[]>(
+    TAGESBERICHT.abschnitte,
   );
-  const [berichtAbschnitte, setBerichtAbschnitte] = useState<
-    BerichtAbschnitt[]
-  >(TAGESBERICHT.abschnitte);
-  const [berichtOffen, setBerichtOffen] = useState(false);
+
   const [mailOffen, setMailOffen] = useState(false);
   const [lieferanten, setLieferanten] = useState(LIEFERANTEN_MOCK);
   const vertragsInput = useRef<HTMLInputElement>(null);
@@ -497,10 +433,7 @@ export function Cockpit() {
     const datei = event.target.files?.[0];
     if (!datei) return;
     const id = crypto.randomUUID();
-    setLieferanten((aktuell) => [
-      ...aktuell,
-      { id, titel: datei.name, beschreibung: "Vertrag" },
-    ]);
+    setLieferanten((aktuell) => [...aktuell, { id, titel: datei.name, beschreibung: "Vertrag" }]);
     event.target.value = "";
   };
 
@@ -515,15 +448,12 @@ export function Cockpit() {
           <CardHeader className="flex shrink-0 flex-wrap items-center justify-between gap-2">
             <CardTitle>Meldungen</CardTitle>
             <span className="text-xs text-muted-foreground">
-              {anstehend.length} anstehend · {abgeschlossen.length}{" "}
-              abgeschlossen
+              {anstehend.length} anstehend · {abgeschlossen.length} abgeschlossen
             </span>
           </CardHeader>
           <ScrollArea className="min-h-0 flex-1">
             <CardContent className="flex flex-col gap-6">
-              {meldungenFehler && (
-                <p className="text-sm text-destructive">{meldungenFehler}</p>
-              )}
+              {meldungenFehler && <p className="text-sm text-destructive">{meldungenFehler}</p>}
               <MeldungsListe
                 ueberschrift="Anstehend"
                 meldungen={anstehend}
@@ -542,157 +472,157 @@ export function Cockpit() {
           </ScrollArea>
         </Card>
 
-        <div className="flex min-h-0 flex-col gap-4">
-          <Card className="h-56 shrink-0 overflow-hidden">
-            <CardHeader>
-              <CardTitle>
-                Tagesbericht {TAGESBERICHT.datum}
-                <br />
-                {TAGESBERICHT.projekt}
-              </CardTitle>
+        <Card className="min-h-0 overflow-hidden">
+          <Tabs
+            defaultValue="tagesbericht"
+            className="flex h-full min-h-0 flex-col gap-(--card-spacing)"
+          >
+            <CardHeader className="shrink-0">
+              <TabsList className="w-auto">
+                <TabsTrigger value="tagesbericht">Tagesbericht</TabsTrigger>
+                <TabsTrigger value="vertraege">Verträge</TabsTrigger>
+                <TabsTrigger value="bauplaene">Baupläne</TabsTrigger>
+                <TabsTrigger value="lieferungen">Lieferungen</TabsTrigger>
+              </TabsList>
             </CardHeader>
-            <CardContent className="min-h-0 flex-1 text-sm text-muted-foreground">
-              {TAGESBERICHT.zusammenfassung}
-            </CardContent>
-            <CardContent className="flex justify-end">
-              <Button variant="outline" onClick={() => setBerichtOffen(true)}>
-                Bericht sehen
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="min-h-0 flex-1 overflow-hidden">
-            <Tabs
-              defaultValue="vertraege"
-              className="flex h-full min-h-0 flex-col gap-(--card-spacing)"
-            >
-              <CardHeader className="shrink-0">
-                <TabsList className="w-auto">
-                  <TabsTrigger value="vertraege">Verträge</TabsTrigger>
-                  <TabsTrigger value="bauplaene">Baupläne</TabsTrigger>
-                  <TabsTrigger value="lieferungen">Lieferungen</TabsTrigger>
-                </TabsList>
-              </CardHeader>
-              <CardContent className="min-h-0 flex-1 overflow-y-auto">
-                <TabsContent
-                  value="vertraege"
-                  className="flex h-full min-h-0 flex-col"
-                >
-                  <div className="flex min-h-0 flex-col gap-3">
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Stichwortsuche"
-                        aria-label="Stichwortsuche"
-                      />
-                      <Select
-                        value={aktivePhase}
-                        onValueChange={setAktivePhase}
+            <CardContent className="min-h-0 flex-1 overflow-y-auto">
+              <TabsContent value="tagesbericht" className="flex flex-col gap-4">
+                <article aria-label="Tagesbericht bearbeiten" className="flex flex-col gap-4">
+                  <h1 className="text-lg font-semibold">{berichtTitel}</h1>
+                  {berichtAbschnitte.map(({ titel, text }, index) => (
+                    <section key={titel} className="flex flex-col gap-1">
+                      <h2 className="text-sm font-semibold text-primary">{titel}</h2>
+                      <p
+                        contentEditable="plaintext-only"
+                        suppressContentEditableWarning
+                        aria-label={`${titel} bearbeiten`}
+                        className="rounded-md text-sm whitespace-pre-wrap outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        onBlur={(event) => {
+                          const neuerText = event.currentTarget.innerText;
+                          setBerichtAbschnitte((aktuell) =>
+                            aktuell.map((abschnitt, i) =>
+                              i === index ? { ...abschnitt, text: neuerText } : abschnitt,
+                            ),
+                          );
+                        }}
                       >
-                        <SelectTrigger
-                          aria-label="Phase"
-                          className="w-40 shrink-0"
-                        >
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={KEINE_AUSWAHL}>
-                            Keine Auswahl
+                        {text}
+                      </p>
+                    </section>
+                  ))}
+                </article>
+                <div className="flex justify-start gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => alsPdfHerunterladen(berichtTitel, berichtText)}
+                  >
+                    PDF
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => alsWordHerunterladen(berichtTitel, berichtText)}
+                  >
+                    Word
+                  </Button>
+                  <Button variant="outline" onClick={() => setMailOffen(true)}>
+                    <MailIcon />
+                    Mail
+                  </Button>
+                </div>
+              </TabsContent>
+              <TabsContent value="vertraege" className="flex h-full min-h-0 flex-col">
+                <div className="flex min-h-0 flex-col gap-3">
+                  <div className="flex gap-2">
+                    <Input placeholder="Stichwortsuche" aria-label="Stichwortsuche" />
+                    <Select value={aktivePhase} onValueChange={setAktivePhase}>
+                      <SelectTrigger aria-label="Phase" className="w-40 shrink-0">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={KEINE_AUSWAHL}>Keine Auswahl</SelectItem>
+                        {PHASEN.map((phase) => (
+                          <SelectItem key={phase} value={phase}>
+                            {phase}
                           </SelectItem>
-                          {PHASEN.map((phase) => (
-                            <SelectItem key={phase} value={phase}>
-                              {phase}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Select
-                        value={aktivesGewerk}
-                        onValueChange={setAktivesGewerk}
-                      >
-                        <SelectTrigger
-                          aria-label="Gewerk"
-                          className="w-40 shrink-0"
-                        >
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={KEINE_AUSWAHL}>
-                            Keine Auswahl
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={aktivesGewerk} onValueChange={setAktivesGewerk}>
+                      <SelectTrigger aria-label="Gewerk" className="w-40 shrink-0">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={KEINE_AUSWAHL}>Keine Auswahl</SelectItem>
+                        {GEWERKE.map((gewerk) => (
+                          <SelectItem key={gewerk} value={gewerk}>
+                            {gewerk}
                           </SelectItem>
-                          {GEWERKE.map((gewerk) => (
-                            <SelectItem key={gewerk} value={gewerk}>
-                              {gewerk}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex min-h-0 flex-1 flex-col gap-2">
-                      <ScrollArea className="-mr-3 min-h-0 flex-1">
-                        <div className="flex flex-col gap-2 pr-3">
-                          {lieferanten.map(({ id, titel, beschreibung }) => (
-                            <div
-                              key={id}
-                              className="flex h-14 shrink-0 items-center justify-between gap-2 rounded-lg bg-background px-3 py-2"
-                            >
-                              <div className="flex flex-col">
-                                <span className="text-sm">{titel}</span>
-                                {beschreibung && (
-                                  <span className="text-xs text-muted-foreground">
-                                    {beschreibung}
-                                  </span>
-                                )}
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                aria-label="Vertrag ansehen"
-                                onClick={() => setOffenerVertragId(id)}
-                              >
-                                <EyeIcon />
-                              </Button>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex min-h-0 flex-1 flex-col gap-2">
+                    <ScrollArea className="-mr-3 min-h-0 flex-1">
+                      <div className="flex flex-col gap-2 pr-3">
+                        {lieferanten.map(({ id, titel, beschreibung }) => (
+                          <div
+                            key={id}
+                            className="flex h-14 shrink-0 items-center justify-between gap-2 rounded-lg bg-background px-3 py-2"
+                          >
+                            <div className="flex flex-col">
+                              <span className="text-sm">{titel}</span>
+                              {beschreibung && (
+                                <span className="text-xs text-muted-foreground">
+                                  {beschreibung}
+                                </span>
+                              )}
                             </div>
-                          ))}
-                        </div>
-                      </ScrollArea>
-                      <Separator />
-                      <div className="flex justify-center">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          aria-label="Vertrag hinzufügen"
-                          onClick={() => vertragsInput.current?.click()}
-                        >
-                          <PlusIcon />
-                        </Button>
-                        <input
-                          ref={vertragsInput}
-                          type="file"
-                          accept=".pdf,.doc,.docx"
-                          className="hidden"
-                          onChange={vertragHinzufuegen}
-                        />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Vertrag ansehen"
+                              onClick={() => setOffenerVertragId(id)}
+                            >
+                              <EyeIcon />
+                            </Button>
+                          </div>
+                        ))}
                       </div>
+                    </ScrollArea>
+                    <Separator />
+                    <div className="flex justify-center">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        aria-label="Vertrag hinzufügen"
+                        onClick={() => vertragsInput.current?.click()}
+                      >
+                        <PlusIcon />
+                      </Button>
+                      <input
+                        ref={vertragsInput}
+                        type="file"
+                        accept=".pdf,.doc,.docx"
+                        className="hidden"
+                        onChange={vertragHinzufuegen}
+                      />
                     </div>
                   </div>
-                </TabsContent>
-                <TabsContent value="bauplaene" className="flex flex-col gap-2">
-                  {BAUPLAENE_MOCK.map(({ id, titel, status }) => (
-                    <ListenEintrag key={id} titel={titel} status={status} />
-                  ))}
-                </TabsContent>
-                <TabsContent
-                  value="lieferungen"
-                  className="flex flex-col gap-2"
-                >
-                  {SUBUNTERNEHMER_MOCK.map(({ id, titel, status }) => (
-                    <ListenEintrag key={id} titel={titel} status={status} />
-                  ))}
-                </TabsContent>
-              </CardContent>
-            </Tabs>
-          </Card>
-        </div>
+                </div>
+              </TabsContent>
+              <TabsContent value="bauplaene" className="flex flex-col gap-2">
+                {BAUPLAENE_MOCK.map(({ id, titel, status }) => (
+                  <ListenEintrag key={id} titel={titel} status={status} />
+                ))}
+              </TabsContent>
+              <TabsContent value="lieferungen" className="flex flex-col gap-2">
+                {SUBUNTERNEHMER_MOCK.map(({ id, titel, status }) => (
+                  <ListenEintrag key={id} titel={titel} status={status} />
+                ))}
+              </TabsContent>
+            </CardContent>
+          </Tabs>
+        </Card>
 
         <div className="grid min-h-0 grid-rows-[minmax(0,1fr)_minmax(0,1fr)] gap-4">
           <TermineListe />
@@ -711,9 +641,7 @@ export function Cockpit() {
           {offenerVertrag && (
             <ScrollArea className="min-h-0 rounded-xl bg-background">
               <article className="flex flex-col gap-4 p-4">
-                <h1 className="text-lg font-semibold">
-                  {offenerVertrag.titel}
-                </h1>
+                <h1 className="text-lg font-semibold">{offenerVertrag.titel}</h1>
                 {offenerVertrag.beschreibung && (
                   <h2 className="text-sm font-semibold text-primary">
                     {offenerVertrag.beschreibung}
@@ -725,65 +653,6 @@ export function Cockpit() {
               </article>
             </ScrollArea>
           )}
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={berichtOffen} onOpenChange={setBerichtOffen}>
-        <DialogContent className="h-[calc(100vh-2rem)] grid-rows-[auto_minmax(0,1fr)_auto] sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Tagesbericht</DialogTitle>
-          </DialogHeader>
-          <ScrollArea className="min-h-0 rounded-xl bg-background">
-            <article
-              aria-label="Tagesbericht bearbeiten"
-              className="flex flex-col gap-4 p-4"
-            >
-              <h1 className="text-lg font-semibold">{berichtTitel}</h1>
-              {berichtAbschnitte.map(({ titel, text }, index) => (
-                <section key={titel} className="flex flex-col gap-1">
-                  <h2 className="text-sm font-semibold text-primary">
-                    {titel}
-                  </h2>
-                  <p
-                    contentEditable="plaintext-only"
-                    suppressContentEditableWarning
-                    aria-label={`${titel} bearbeiten`}
-                    className="rounded-md text-sm whitespace-pre-wrap outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    onBlur={(event) => {
-                      const neuerText = event.currentTarget.innerText;
-                      setBerichtAbschnitte((aktuell) =>
-                        aktuell.map((abschnitt, i) =>
-                          i === index
-                            ? { ...abschnitt, text: neuerText }
-                            : abschnitt,
-                        ),
-                      );
-                    }}
-                  >
-                    {text}
-                  </p>
-                </section>
-              ))}
-            </article>
-          </ScrollArea>
-          <DialogFooter className="sm:justify-start">
-            <Button
-              variant="outline"
-              onClick={() => alsPdfHerunterladen(berichtTitel, berichtText)}
-            >
-              PDF
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => alsWordHerunterladen(berichtTitel, berichtText)}
-            >
-              Word
-            </Button>
-            <Button variant="outline" onClick={() => setMailOffen(true)}>
-              <MailIcon />
-              Mail
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
