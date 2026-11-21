@@ -2,6 +2,14 @@ import { useRef, useState, type ChangeEvent } from "react";
 import { CheckIcon, EyeIcon, MailIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
 
 import { CockpitHeader } from "@/components/CockpitHeader";
+import {
+  PUMPEN_VERTRAG,
+  ROHBAU_VERTRAG,
+  STAHL_VERTRAG,
+  TIEFBAU_VERTRAG,
+  TRANSPORTBETON_VERTRAG,
+  type Vertrag,
+} from "@/lib/vertraege";
 import { PriorityFlag } from "@/components/PriorityFlag";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -61,6 +69,7 @@ type Lieferant = {
   titel: string;
   beschreibung: string;
   vorschau?: string;
+  vertrag?: Vertrag;
 };
 
 const LIEFERANTEN_MOCK: Lieferant[] = [
@@ -68,29 +77,55 @@ const LIEFERANTEN_MOCK: Lieferant[] = [
     id: "l-1",
     titel: "Isar Transportbeton GmbH",
     beschreibung: "Transportbeton · Liefervertrag 2026",
-    vorschau:
-      "Heute: C25/30, 10 t, Ankunft 11:38 statt 09:40.\nNächste Lieferung: Mo 07:00, C25/30, 24 t (Bodenplatte C).\n§ 5 Lieferzeit: Wartezeiten trägt der Lieferant, soweit er sie zu vertreten hat.",
+    vertrag: TRANSPORTBETON_VERTRAG,
   },
   {
     id: "l-2",
     titel: "Brandl Betonpumpen",
     beschreibung: "Autobetonpumpe 36 m · Mietvertrag",
-    vorschau:
-      "Heute: Ausfall 08:15, Ersatzgerät ab 10:30.\n§ 4 Ausfall: Ersatz binnen 3 Stunden, Ausfallzeiten werden nicht berechnet.",
+    vertrag: PUMPEN_VERTRAG,
   },
   {
     id: "l-3",
     titel: "Stahlhandel Obermaier",
     beschreibung: "Bewehrungsstahl BSt 500 · Rahmenvertrag",
-    vorschau: "Nächste Lieferung: Mo 07:00, 4,2 t für Abschnitt C.\nEngpass bis KW 49 gemeldet.",
+    vertrag: STAHL_VERTRAG,
   },
   {
-    id: "l-4",
-    titel: "Personal",
-    beschreibung: "",
-    vorschau: "14 Arbeitskräfte vor Ort: Rohbau 9, Tiefbau 3, Bauleitung 2.",
+    id: "l-5",
+    titel: "Kessler Rohbau GmbH & Co. KG",
+    beschreibung: "Stahlbetonarbeiten Haus B · Nachunternehmervertrag",
+    vertrag: ROHBAU_VERTRAG,
+  },
+  {
+    id: "l-6",
+    titel: "Huber Tiefbau GmbH",
+    beschreibung: "Baugrube und Verbau · Rahmenvertrag",
+    vertrag: TIEFBAU_VERTRAG,
   },
 ];
+
+/** A contract as numbered paragraphs, like a printed document. */
+function VertragText({ vertrag }: { vertrag: Vertrag }) {
+  return (
+    <div className="flex flex-col gap-4 text-sm">
+      <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+        {vertrag.kopf.map((zeile) => (
+          <span key={zeile}>{zeile}</span>
+        ))}
+      </div>
+      {vertrag.paragraphen.map(({ titel, text }, index) => (
+        <section key={titel} className="flex flex-col gap-1">
+          <h3 className="font-semibold">
+            § {index + 1} {titel}
+          </h3>
+          <p className="leading-relaxed">{text}</p>
+        </section>
+      ))}
+      <p className="border-t pt-3 text-xs text-muted-foreground">{vertrag.unterschrift}</p>
+    </div>
+  );
+}
 
 const SUBUNTERNEHMER_MOCK = [
   {
@@ -658,9 +693,13 @@ export function Cockpit() {
                     {offenerVertrag.beschreibung}
                   </h2>
                 )}
-                <p className="text-sm whitespace-pre-line">
-                  {offenerVertrag.vorschau ?? "Keine Vorschau verfügbar."}
-                </p>
+                {offenerVertrag.vertrag ? (
+                  <VertragText vertrag={offenerVertrag.vertrag} />
+                ) : (
+                  <p className="text-sm whitespace-pre-line">
+                    {offenerVertrag.vorschau ?? "Keine Vorschau verfügbar."}
+                  </p>
+                )}
               </article>
             </ScrollArea>
           )}
