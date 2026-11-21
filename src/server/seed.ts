@@ -19,7 +19,8 @@ export const SEED_MELDUNGEN: Meldung[] = [
     title: "Betonpumpe defekt",
     content:
       "Autobetonpumpe in Abschnitt B um 08:15 ausgefallen (Hydraulikschlauch geplatzt). Ersatzpumpe von Brandl Betonpumpen ab 10:30 im Einsatz.",
-    transcript: "Hier ist die Betonpumpe an Abschnitt B ausgefallen, wir brauchen Ersatz...",
+    transcript:
+      "Hier ist die Betonpumpe an Abschnitt B ausgefallen, wir brauchen Ersatz...",
     priority: 4,
     timestamp: zeit(21, 8, 15),
     location: "Abschnitt B",
@@ -82,8 +83,10 @@ export const SEED_MELDUNGEN: Meldung[] = [
   {
     id: "m-4",
     title: "Kiesmangel",
-    content: "Kies 0/32 (18 t) für die Sauberkeitsschicht um 08:05 nachgeliefert.",
-    transcript: "Der fehlende Kies für die Sauberkeitsschicht ist gerade nachgeliefert worden...",
+    content:
+      "Kies 0/32 (18 t) für die Sauberkeitsschicht um 08:05 nachgeliefert.",
+    transcript:
+      "Der fehlende Kies für die Sauberkeitsschicht ist gerade nachgeliefert worden...",
     priority: 2,
     timestamp: zeit(21, 8, 5),
     location: "Abschnitt C",

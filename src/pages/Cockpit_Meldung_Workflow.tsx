@@ -47,7 +47,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -78,8 +82,12 @@ const SUBUNTERNEHMER = [
   {
     id: "beton",
     name: "Isar Transportbeton GmbH (Lieferant)",
-    vertraege: ["Liefervertrag Transportbeton 2026.pdf", "Preisliste Beton C25-30.pdf"],
-    leistung: "Lieferung Transportbeton frei Baustelle nach Abruf, mind. 24 h vorher",
+    vertraege: [
+      "Liefervertrag Transportbeton 2026.pdf",
+      "Preisliste Beton C25-30.pdf",
+    ],
+    leistung:
+      "Lieferung Transportbeton frei Baustelle nach Abruf, mind. 24 h vorher",
     klausel:
       "§ 5 Lieferzeit: Liefertermine sind verbindlich. Bei Verspätung über 60 Minuten informiert der Lieferant unverzüglich; Wartezeiten von Pumpe und Kolonne trägt der Lieferant, soweit er sie zu vertreten hat.",
   },
@@ -94,7 +102,10 @@ const SUBUNTERNEHMER = [
   {
     id: "rohbau",
     name: "Kessler Rohbau GmbH & Co. KG",
-    vertraege: ["Werkvertrag Rohbau Haus B.pdf", "Versicherungsnachweis 2026.pdf"],
+    vertraege: [
+      "Werkvertrag Rohbau Haus B.pdf",
+      "Versicherungsnachweis 2026.pdf",
+    ],
     leistung: "Stahlbetonarbeiten UG bis Dach, inkl. Schalung und Bewehrung",
     klausel:
       "§ 9 Vertragsstrafe: 0,2 % der Auftragssumme je Werktag Verzug bei Zwischenfrist Fertigstellung UG, max. 5 %.",
@@ -112,14 +123,16 @@ const SUBUNTERNEHMER = [
     name: "Elektro Lechner GmbH",
     vertraege: ["Werkvertrag Elektro Haus B.pdf"],
     leistung: "Baustrom, Erdung und Elektroinstallation Haus B",
-    klausel: "§ 6 Termine: Beginn Rohinstallation nach Fertigstellung Decke über EG.",
+    klausel:
+      "§ 6 Termine: Beginn Rohinstallation nach Fertigstellung Decke über EG.",
   },
   {
     id: "haustechnik",
     name: "Wagner Haustechnik GmbH",
     vertraege: ["Werkvertrag Heizung Sanitär Lüftung.pdf"],
     leistung: "Heizung, Sanitär und Lüftung Haus B",
-    klausel: "§ 6 Termine: Grundleitungen vor Betonage Bodenplatte, Abstimmung mit Rohbau.",
+    klausel:
+      "§ 6 Termine: Grundleitungen vor Betonage Bodenplatte, Abstimmung mit Rohbau.",
   },
 ];
 
@@ -133,7 +146,11 @@ const VERTRAGS_VORSCHAU: Record<string, string> = Object.fromEntries(
   ),
 );
 
-const vertragsIndex = new MiniSearch<{ id: string; text: string; unternehmer: string }>({
+const vertragsIndex = new MiniSearch<{
+  id: string;
+  text: string;
+  unternehmer: string;
+}>({
   fields: ["id", "text", "unternehmer"],
   storeFields: ["id"],
   searchOptions: { prefix: true, fuzzy: 0.2, boost: { id: 2 } },
@@ -154,11 +171,19 @@ const MAX_KEYWORDS = 5;
 const KEYWORDS_MOCK_LAUFZEIT_MS = 1500;
 
 /** Mock-Keywords für die Vertragssuche. Hier eintragen (maximal MAX_KEYWORDS). */
-const KEYWORDS_MOCK = ["Lieferzeit", "Verspätung", "Beton", "Lieferant", "Wartezeiten"];
+const KEYWORDS_MOCK = [
+  "Lieferzeit",
+  "Verspätung",
+  "Beton",
+  "Lieferant",
+  "Wartezeiten",
+];
 
 /** Simuliert die Keyword-Erzeugung durch ein Modell, bis die Anbindung steht. */
 async function schlageKeywordsVor(_zusammenfassung: string): Promise<string[]> {
-  await new Promise((resolve) => setTimeout(resolve, KEYWORDS_MOCK_LAUFZEIT_MS));
+  await new Promise((resolve) =>
+    setTimeout(resolve, KEYWORDS_MOCK_LAUFZEIT_MS),
+  );
   return KEYWORDS_MOCK.slice(0, MAX_KEYWORDS);
 }
 
@@ -248,7 +273,11 @@ type BetroffenerVertrag = {
   unternehmer: string;
 };
 
-const dateiTab = (name: string): Tab => ({ id: `datei:${name}`, title: name, typ: "datei" });
+const dateiTab = (name: string): Tab => ({
+  id: `datei:${name}`,
+  title: name,
+  typ: "datei",
+});
 const anhangTab = (anhang: Anhang): Tab => ({
   id: `anhang:${anhang.id}`,
   title: anhang.name,
@@ -262,7 +291,10 @@ function textVonTab(tab: Tab | undefined, transkript: string) {
   if (tab.typ === "dokument") return tab.inhalt ?? "";
   if (tab.typ === "transkript") return transkript;
   return (
-    tab.anhang?.vorschauText ?? DATEI_VORSCHAU[tab.title] ?? VERTRAGS_VORSCHAU[tab.title] ?? ""
+    tab.anhang?.vorschauText ??
+    DATEI_VORSCHAU[tab.title] ??
+    VERTRAGS_VORSCHAU[tab.title] ??
+    ""
   );
 }
 
@@ -270,13 +302,16 @@ const anhangBeschreibung = ({ beschreibung, mime }: Anhang) =>
   beschreibung ?? (mime === "application/pdf" ? "PDF" : (mime ?? "Datei"));
 
 export function CockpitMeldungWorkflow() {
-  const meldungsId = new URLSearchParams(window.location.search).get("id") ?? STANDARD_MELDUNG_ID;
+  const meldungsId =
+    new URLSearchParams(window.location.search).get("id") ??
+    STANDARD_MELDUNG_ID;
   const { meldungen, laedt, fehler, aendere, loesche } = useMeldungen();
   const meldung = meldungen.find(({ id }) => id === meldungsId);
   const zusammenfassung = meldung?.content ?? "";
   const transkript = meldung?.transcript ?? "";
   const bilder = meldung?.attachments.filter(({ typ }) => typ === "bild") ?? [];
-  const anhaenge = meldung?.attachments.filter(({ typ }) => typ === "datei") ?? [];
+  const anhaenge =
+    meldung?.attachments.filter(({ typ }) => typ === "datei") ?? [];
   const vorfallTitel = meldung
     ? `Vorfall: ${meldung.title}`
     : laedt
@@ -285,7 +320,9 @@ export function CockpitMeldungWorkflow() {
 
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [aktiverTab, setAktiverTab] = useState("");
-  const [betroffeneVertraege, setBetroffeneVertraege] = useState<BetroffenerVertrag[]>([]);
+  const [betroffeneVertraege, setBetroffeneVertraege] = useState<
+    BetroffenerVertrag[]
+  >([]);
   const [mailOffen, setMailOffen] = useState(false);
   const [vertragsSuche, setVertragsSuche] = useState("");
   const [metadaten, setMetadaten] = useState(() => ({
@@ -296,7 +333,9 @@ export function CockpitMeldungWorkflow() {
 
   const oeffneTab = (tab: Tab) => {
     setTabs((current) =>
-      current.some((vorhanden) => vorhanden.id === tab.id) ? current : [...current, tab],
+      current.some((vorhanden) => vorhanden.id === tab.id)
+        ? current
+        : [...current, tab],
     );
     setAktiverTab(tab.id);
   };
@@ -322,7 +361,9 @@ export function CockpitMeldungWorkflow() {
     );
 
   const setzeInhalt = (id: string, inhalt: string) =>
-    setTabs((current) => current.map((tab) => (tab.id === id ? { ...tab, inhalt } : tab)));
+    setTabs((current) =>
+      current.map((tab) => (tab.id === id ? { ...tab, inhalt } : tab)),
+    );
 
   const toggleVertrag = (vertrag: string, unternehmer: string) =>
     setBetroffeneVertraege((current) =>
@@ -332,7 +373,9 @@ export function CockpitMeldungWorkflow() {
     );
 
   const entferneVertrag = (vertrag: string) =>
-    setBetroffeneVertraege((current) => current.filter((eintrag) => eintrag.vertrag !== vertrag));
+    setBetroffeneVertraege((current) =>
+      current.filter((eintrag) => eintrag.vertrag !== vertrag),
+    );
 
   const betroffeneNamen = betroffeneVertraege.map((eintrag) => eintrag.vertrag);
 
@@ -350,15 +393,22 @@ export function CockpitMeldungWorkflow() {
   const gefilterteSubunternehmer = useMemo(() => {
     const suchbegriff = vertragsSuche.trim();
     if (!suchbegriff) return SUBUNTERNEHMER;
-    const treffer = new Set(vertragsIndex.search(suchbegriff).map((ergebnis) => ergebnis.id));
+    const treffer = new Set(
+      vertragsIndex.search(suchbegriff).map((ergebnis) => ergebnis.id),
+    );
     return SUBUNTERNEHMER.map((unternehmer) => ({
       ...unternehmer,
-      vertraege: unternehmer.vertraege.filter((vertrag) => treffer.has(vertrag)),
+      vertraege: unternehmer.vertraege.filter((vertrag) =>
+        treffer.has(vertrag),
+      ),
     })).filter((unternehmer) => unternehmer.vertraege.length > 0);
   }, [vertragsSuche]);
 
   const aktuellerTab = tabs.find((tab) => tab.id === aktiverTab);
-  const mailText = aktuellerTab?.typ === "dokument" && aktuellerTab.inhalt ? aktuellerTab.inhalt : "";
+  const mailText =
+    aktuellerTab?.typ === "dokument" && aktuellerTab.inhalt
+      ? aktuellerTab.inhalt
+      : "";
   const exportTitel = aktuellerTab?.title ?? "";
   const exportText = textVonTab(aktuellerTab, transkript);
 
@@ -368,7 +418,10 @@ export function CockpitMeldungWorkflow() {
   const nachrichtSenden = () => {
     const text = chatEingabe.trim();
     if (!text) return;
-    setChatVerlauf((aktuell) => [...aktuell, { id: crypto.randomUUID(), rolle: "nutzer", text }]);
+    setChatVerlauf((aktuell) => [
+      ...aktuell,
+      { id: crypto.randomUUID(), rolle: "nutzer", text },
+    ]);
     setChatEingabe("");
     setTimeout(
       () =>
@@ -384,390 +437,426 @@ export function CockpitMeldungWorkflow() {
     <div className="flex h-screen flex-col bg-background text-foreground">
       <CockpitHeader projekt="Wohnanlage Lindenhof – Haus B" datum="21.11.26" />
       <div className="grid min-h-0 flex-1 grid-cols-[5fr_5fr_3fr] gap-4 p-4">
-      {/* Linke Spalte: Incident und Subunternehmer */}
-      <div className="grid min-h-0 grid-rows-[3fr_2fr] gap-4">
+        {/* Linke Spalte: Incident und Subunternehmer */}
+        <div className="grid min-h-0 grid-rows-[3fr_2fr] gap-4">
+          <Card className="min-h-0">
+            <CardHeader>
+              <CardTitle>{vorfallTitel}</CardTitle>
+              <CardAction>
+                <Button variant="ghost" size="sm" asChild>
+                  <a href="/cockpit">
+                    <ArrowLeftIcon />
+                    Cockpit
+                  </a>
+                </Button>
+              </CardAction>
+            </CardHeader>
+            <ScrollArea className="min-h-0 flex-1">
+              <CardContent className="flex flex-col gap-4">
+                {fehler && <p className="text-xs text-destructive">{fehler}</p>}
+                <section className="flex flex-col gap-2">
+                  <h3 className="text-xs font-medium">Zusammenfassung</h3>
+                  <Textarea
+                    aria-label="Zusammenfassung"
+                    className="min-h-32"
+                    disabled={!meldung}
+                    value={zusammenfassung}
+                    onChange={(event) =>
+                      aendere(meldungsId, { content: event.target.value })
+                    }
+                  />
+                </section>
+
+                <section className="flex flex-col gap-2">
+                  <h3 className="text-xs font-medium">Bilder</h3>
+                  {bilder.length === 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      Keine Bilder.
+                    </p>
+                  )}
+                  <ul className="grid grid-cols-2 gap-2">
+                    {bilder.map((bild) => (
+                      <li key={bild.id}>
+                        <button
+                          type="button"
+                          aria-label={`${bild.name} öffnen`}
+                          onClick={() => oeffneTab(anhangTab(bild))}
+                          className="flex w-full flex-col gap-1 rounded-md border p-1 text-left hover:bg-muted"
+                        >
+                          {bild.url ? (
+                            <img
+                              src={bild.url}
+                              alt={bild.name}
+                              loading="lazy"
+                              className="aspect-video w-full rounded-sm object-cover"
+                            />
+                          ) : (
+                            <div className="flex aspect-video w-full items-center justify-center rounded-sm bg-muted text-muted-foreground">
+                              <ImageIcon />
+                            </div>
+                          )}
+                          <span className="truncate px-1 text-xs">
+                            {bild.name}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+
+                <section className="flex flex-col gap-2">
+                  <h3 className="text-xs font-medium">Anhänge</h3>
+                  {anhaenge.length === 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      Keine Anhänge.
+                    </p>
+                  )}
+                  <ul className="flex flex-col gap-2">
+                    {anhaenge.map((anhang) => (
+                      <li key={anhang.id}>
+                        <Attachment size="sm" className="w-full">
+                          <AttachmentMedia>
+                            <PaperclipIcon />
+                          </AttachmentMedia>
+                          <AttachmentContent>
+                            <AttachmentTitle>{anhang.name}</AttachmentTitle>
+                            <AttachmentDescription>
+                              {anhangBeschreibung(anhang)}
+                            </AttachmentDescription>
+                          </AttachmentContent>
+                          <AttachmentTrigger
+                            aria-label={`${anhang.name} öffnen`}
+                            onClick={() => oeffneTab(anhangTab(anhang))}
+                          />
+                        </Attachment>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              </CardContent>
+            </ScrollArea>
+            <CardFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() =>
+                  oeffneTab({
+                    id: "transkript",
+                    title: "Transkript",
+                    typ: "transkript",
+                  })
+                }
+              >
+                <FileTextIcon />
+                Transkript
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive">
+                    <Trash2Icon />
+                    Löschen
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Vorfall löschen?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Möchtest du diesen Vorfall wirklich löschen? Diese Aktion
+                      kann nicht rückgängig gemacht werden.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                    <AlertDialogAction
+                      variant="destructive"
+                      onClick={async () => {
+                        await loesche(meldungsId);
+                        window.location.assign("/cockpit");
+                      }}
+                    >
+                      Löschen
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <Button
+                className="ml-auto"
+                onClick={() =>
+                  oeffneTab({
+                    id: `dokument-${Date.now()}`,
+                    title: "Neues Dokument",
+                    typ: "dokument",
+                  })
+                }
+              >
+                Dokument erstellen
+              </Button>
+            </CardFooter>
+          </Card>
+
+          <Card className="min-h-0">
+            <CardHeader>
+              <CardTitle>Vorgeschlagene Subunternehmer</CardTitle>
+              <div className="grid grid-cols-[3fr_1fr] gap-2">
+                <Input
+                  type="search"
+                  aria-label="Verträge durchsuchen"
+                  placeholder="Verträge durchsuchen …"
+                  value={vertragsSuche}
+                  onChange={(event) => setVertragsSuche(event.target.value)}
+                />
+                <Button
+                  variant="outline"
+                  className="h-auto min-h-8 whitespace-normal"
+                  disabled={keywordsLaden}
+                  onClick={keywordsVorschlagen}
+                >
+                  {keywordsLaden ? (
+                    <Loader2Icon className="animate-spin" />
+                  ) : (
+                    <SparklesIcon />
+                  )}
+                  Vorschlag
+                </Button>
+              </div>
+            </CardHeader>
+            <ScrollArea className="min-h-0 flex-1">
+              <CardContent>
+                <ul className="flex flex-col gap-2">
+                  {gefilterteSubunternehmer.length === 0 && (
+                    <li className="text-xs text-muted-foreground">
+                      Keine Verträge gefunden
+                    </li>
+                  )}
+                  {gefilterteSubunternehmer.map((unternehmer) => (
+                    <li key={unternehmer.id}>
+                      <SubunternehmerEintrag
+                        name={unternehmer.name}
+                        vertraege={unternehmer.vertraege}
+                        betroffeneVertraege={betroffeneNamen}
+                        onToggleVertrag={(vertrag) =>
+                          toggleVertrag(vertrag, unternehmer.name)
+                        }
+                        onOeffneVertrag={(vertrag) =>
+                          oeffneTab(dateiTab(vertrag))
+                        }
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </ScrollArea>
+          </Card>
+        </div>
+
+        {/* Mittlere Spalte: Anzeige mit Tabs für geöffnete Dateien */}
         <Card className="min-h-0">
           <CardHeader>
-            <CardTitle>{vorfallTitel}</CardTitle>
-            <CardAction>
-              <Button variant="ghost" size="sm" asChild>
-                <a href="/cockpit">
-                  <ArrowLeftIcon />
-                  Cockpit
-                </a>
-              </Button>
-            </CardAction>
+            <CardTitle>Anzeige</CardTitle>
           </CardHeader>
-          <ScrollArea className="min-h-0 flex-1">
-            <CardContent className="flex flex-col gap-4">
-              {fehler && <p className="text-xs text-destructive">{fehler}</p>}
-              <section className="flex flex-col gap-2">
-                <h3 className="text-xs font-medium">Zusammenfassung</h3>
-                <Textarea
-                  aria-label="Zusammenfassung"
-                  className="min-h-32"
-                  disabled={!meldung}
-                  value={zusammenfassung}
-                  onChange={(event) => aendere(meldungsId, { content: event.target.value })}
-                />
-              </section>
-
-              <section className="flex flex-col gap-2">
-                <h3 className="text-xs font-medium">Bilder</h3>
-                {bilder.length === 0 && (
-                  <p className="text-xs text-muted-foreground">Keine Bilder.</p>
-                )}
-                <ul className="grid grid-cols-2 gap-2">
-                  {bilder.map((bild) => (
-                    <li key={bild.id}>
-                      <button
-                        type="button"
-                        aria-label={`${bild.name} öffnen`}
-                        onClick={() => oeffneTab(anhangTab(bild))}
-                        className="flex w-full flex-col gap-1 rounded-md border p-1 text-left hover:bg-muted"
+          <CardContent className="flex min-h-0 flex-1 flex-col">
+            {tabs.length === 0 ? (
+              <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1 rounded-md border bg-muted p-6 text-center text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">
+                  Keine Datei geöffnet
+                </span>
+                Öffne links ein Bild, einen Anhang oder einen Vertrag, oder
+                erstelle ein Dokument.
+              </div>
+            ) : (
+              <Tabs
+                value={aktiverTab}
+                onValueChange={setAktiverTab}
+                className="flex min-h-0 flex-1 flex-col"
+              >
+                <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto overflow-y-hidden bg-transparent px-0 py-1 group-data-horizontal/tabs:h-auto [scrollbar-color:var(--border)_transparent] [scrollbar-width:thin]">
+                  {tabs.map((tab) => {
+                    const aktiv = tab.id === aktiverTab;
+                    return (
+                      <div
+                        key={tab.id}
+                        className={`flex shrink-0 items-center rounded-md ${
+                          aktiv
+                            ? "bg-background text-foreground shadow-sm ring-1 ring-foreground/10"
+                            : "bg-muted/50 text-muted-foreground"
+                        }`}
                       >
-                        {bild.url ? (
-                          <img
-                            src={bild.url}
-                            alt={bild.name}
-                            loading="lazy"
-                            className="aspect-video w-full rounded-sm object-cover"
-                          />
-                        ) : (
-                          <div className="flex aspect-video w-full items-center justify-center rounded-sm bg-muted text-muted-foreground">
-                            <ImageIcon />
-                          </div>
-                        )}
-                        <span className="truncate px-1 text-xs">{bild.name}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </section>
+                        <TabsTrigger
+                          value={tab.id}
+                          className={`h-9 min-w-0 max-w-40 flex-none border-0 bg-transparent data-active:bg-transparent dark:data-active:border-transparent dark:data-active:bg-transparent ${
+                            aktiv ? "font-semibold" : ""
+                          }`}
+                        >
+                          <span className="min-w-0 truncate" title={tab.title}>
+                            {tab.title}
+                          </span>
+                        </TabsTrigger>
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          aria-label={`${tab.title} schließen`}
+                          onClick={() => schliesseTab(tab.id)}
+                        >
+                          <XIcon />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </TabsList>
 
-              <section className="flex flex-col gap-2">
-                <h3 className="text-xs font-medium">Anhänge</h3>
-                {anhaenge.length === 0 && (
-                  <p className="text-xs text-muted-foreground">Keine Anhänge.</p>
-                )}
-                <ul className="flex flex-col gap-2">
-                  {anhaenge.map((anhang) => (
-                    <li key={anhang.id}>
-                      <Attachment size="sm" className="w-full">
-                        <AttachmentMedia>
-                          <PaperclipIcon />
-                        </AttachmentMedia>
-                        <AttachmentContent>
-                          <AttachmentTitle>{anhang.name}</AttachmentTitle>
-                          <AttachmentDescription>{anhangBeschreibung(anhang)}</AttachmentDescription>
-                        </AttachmentContent>
-                        <AttachmentTrigger
-                          aria-label={`${anhang.name} öffnen`}
-                          onClick={() => oeffneTab(anhangTab(anhang))}
-                        />
-                      </Attachment>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            </CardContent>
-          </ScrollArea>
+                {tabs.map((tab) => (
+                  <TabsContent
+                    key={tab.id}
+                    value={tab.id}
+                    className="flex h-0 min-h-0 flex-1 flex-col gap-2 overflow-y-auto"
+                  >
+                    {tab.typ === "dokument" && tab.dokumentTyp && (
+                      <Metadaten
+                        datum={metadaten.datum}
+                        betroffeneVertraege={betroffeneVertraege}
+                        deadline={metadaten.deadline}
+                        prioritaet={metadaten.prioritaet}
+                        onEntferneVertrag={entferneVertrag}
+                        onChangeDeadline={(deadline) =>
+                          setMetadaten((current) => ({ ...current, deadline }))
+                        }
+                        onChangePrioritaet={(prioritaet) =>
+                          setMetadaten((current) => ({
+                            ...current,
+                            prioritaet,
+                          }))
+                        }
+                      />
+                    )}
+                    <TabInhalt
+                      tab={tab}
+                      transkript={transkript}
+                      onWaehleDokumentTyp={(typ) =>
+                        setzeDokumentTyp(tab.id, typ)
+                      }
+                      onAendereInhalt={(inhalt) => setzeInhalt(tab.id, inhalt)}
+                      onAbbrechen={() => schliesseTab(tab.id)}
+                    />
+                  </TabsContent>
+                ))}
+              </Tabs>
+            )}
+          </CardContent>
           <CardFooter className="gap-2">
             <Button
               variant="outline"
-              onClick={() =>
-                oeffneTab({ id: "transkript", title: "Transkript", typ: "transkript" })
-              }
+              disabled={!exportText}
+              onClick={() => alsPdfHerunterladen(exportTitel, exportText)}
             >
-              <FileTextIcon />
-              Transkript
+              PDF
             </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive">
-                  <Trash2Icon />
-                  Löschen
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Vorfall löschen?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Möchtest du diesen Vorfall wirklich löschen? Diese Aktion kann nicht rückgängig
-                    gemacht werden.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                  <AlertDialogAction
-                    variant="destructive"
-                    onClick={async () => {
-                      await loesche(meldungsId);
-                      window.location.assign("/cockpit");
-                    }}
-                  >
-                    Löschen
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
             <Button
-              className="ml-auto"
-              onClick={() =>
-                oeffneTab({
-                  id: `dokument-${Date.now()}`,
-                  title: "Neues Dokument",
-                  typ: "dokument",
-                })
-              }
+              variant="outline"
+              disabled={!exportText}
+              onClick={() => alsWordHerunterladen(exportTitel, exportText)}
             >
-              Dokument erstellen
+              Word
+            </Button>
+            <Button variant="outline" onClick={() => setMailOffen(true)}>
+              <MailIcon />
+              Mail
             </Button>
           </CardFooter>
         </Card>
 
+        {/* Rechte Spalte: KI-Chat */}
         <Card className="min-h-0">
           <CardHeader>
-            <CardTitle>Vorgeschlagene Subunternehmer</CardTitle>
-            <div className="grid grid-cols-[3fr_1fr] gap-2">
-              <Input
-                type="search"
-                aria-label="Verträge durchsuchen"
-                placeholder="Verträge durchsuchen …"
-                value={vertragsSuche}
-                onChange={(event) => setVertragsSuche(event.target.value)}
-              />
-              <Button
-                variant="outline"
-                className="h-auto min-h-8 whitespace-normal"
-                disabled={keywordsLaden}
-                onClick={keywordsVorschlagen}
-              >
-                {keywordsLaden ? <Loader2Icon className="animate-spin" /> : <SparklesIcon />}
-                Vorschlag
-              </Button>
-            </div>
+            <CardTitle>KI-Chat</CardTitle>
           </CardHeader>
-          <ScrollArea className="min-h-0 flex-1">
-            <CardContent>
-              <ul className="flex flex-col gap-2">
-                {gefilterteSubunternehmer.length === 0 && (
-                  <li className="text-xs text-muted-foreground">Keine Verträge gefunden</li>
-                )}
-                {gefilterteSubunternehmer.map((unternehmer) => (
-                  <li key={unternehmer.id}>
-                    <SubunternehmerEintrag
-                      name={unternehmer.name}
-                      vertraege={unternehmer.vertraege}
-                      betroffeneVertraege={betroffeneNamen}
-                      onToggleVertrag={(vertrag) => toggleVertrag(vertrag, unternehmer.name)}
-                      onOeffneVertrag={(vertrag) => oeffneTab(dateiTab(vertrag))}
-                    />
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </ScrollArea>
-        </Card>
-      </div>
-
-      {/* Mittlere Spalte: Anzeige mit Tabs für geöffnete Dateien */}
-      <Card className="min-h-0">
-        <CardHeader>
-          <CardTitle>Anzeige</CardTitle>
-        </CardHeader>
-        <CardContent className="flex min-h-0 flex-1 flex-col">
-          {tabs.length === 0 ? (
-            <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1 rounded-md border bg-muted p-6 text-center text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">Keine Datei geöffnet</span>
-              Öffne links ein Bild, einen Anhang oder einen Vertrag, oder erstelle ein Dokument.
-            </div>
-          ) : (
-            <Tabs
-              value={aktiverTab}
-              onValueChange={setAktiverTab}
-              className="flex min-h-0 flex-1 flex-col"
-            >
-              <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto overflow-y-hidden bg-transparent px-0 py-1 group-data-horizontal/tabs:h-auto [scrollbar-color:var(--border)_transparent] [scrollbar-width:thin]">
-                {tabs.map((tab) => {
-                  const aktiv = tab.id === aktiverTab;
+          <CardContent className="flex min-h-0 flex-1 flex-col gap-3">
+            <ScrollArea className="min-h-0 flex-1">
+              <div className="flex flex-col gap-4 pr-3">
+                {chatVerlauf.map((nachricht) => {
+                  const istKi = nachricht.rolle === "ki";
                   return (
-                    <div
-                      key={tab.id}
-                      className={`flex shrink-0 items-center rounded-md ${
-                        aktiv
-                          ? "bg-background text-foreground shadow-sm ring-1 ring-foreground/10"
-                          : "bg-muted/50 text-muted-foreground"
-                      }`}
-                    >
-                      <TabsTrigger
-                        value={tab.id}
-                        className={`h-9 min-w-0 max-w-40 flex-none border-0 bg-transparent data-active:bg-transparent dark:data-active:border-transparent dark:data-active:bg-transparent ${
-                          aktiv ? "font-semibold" : ""
-                        }`}
-                      >
-                        <span className="min-w-0 truncate" title={tab.title}>
-                          {tab.title}
-                        </span>
-                      </TabsTrigger>
-                      <Button
-                        variant="ghost"
-                        size="icon-xs"
-                        aria-label={`${tab.title} schließen`}
-                        onClick={() => schliesseTab(tab.id)}
-                      >
-                        <XIcon />
-                      </Button>
-                    </div>
+                    <Fragment key={nachricht.id}>
+                      <Message align={istKi ? "start" : "end"}>
+                        <MessageContent>
+                          <div
+                            className={`max-w-[85%] rounded-lg px-3 py-2 ${
+                              istKi
+                                ? "self-start bg-muted"
+                                : "self-end bg-primary text-primary-foreground"
+                            }`}
+                          >
+                            {nachricht.text}
+                          </div>
+                        </MessageContent>
+                      </Message>
+                      {nachricht.aktion && (
+                        <div className="flex flex-col gap-2">
+                          <Marker>
+                            <MarkerIcon>
+                              <FileTextIcon />
+                            </MarkerIcon>
+                            <MarkerContent>{nachricht.aktion}</MarkerContent>
+                          </Marker>
+                          {nachricht.hatAenderungsAktion && (
+                            <>
+                              <Marker>
+                                <MarkerIcon>
+                                  <CheckIcon />
+                                </MarkerIcon>
+                                <MarkerContent>
+                                  Änderung übernehmen
+                                </MarkerContent>
+                              </Marker>
+                              <Marker>
+                                <MarkerIcon>
+                                  <RotateCcwIcon />
+                                </MarkerIcon>
+                                <MarkerContent>
+                                  Änderung verwerfen
+                                </MarkerContent>
+                              </Marker>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </Fragment>
                   );
                 })}
-              </TabsList>
-
-              {tabs.map((tab) => (
-                <TabsContent
-                  key={tab.id}
-                  value={tab.id}
-                  className="flex h-0 min-h-0 flex-1 flex-col gap-2 overflow-y-auto"
-                >
-                  {tab.typ === "dokument" && tab.dokumentTyp && (
-                    <Metadaten
-                      datum={metadaten.datum}
-                      betroffeneVertraege={betroffeneVertraege}
-                      deadline={metadaten.deadline}
-                      prioritaet={metadaten.prioritaet}
-                      onEntferneVertrag={entferneVertrag}
-                      onChangeDeadline={(deadline) =>
-                        setMetadaten((current) => ({ ...current, deadline }))
-                      }
-                      onChangePrioritaet={(prioritaet) =>
-                        setMetadaten((current) => ({ ...current, prioritaet }))
-                      }
-                    />
-                  )}
-                  <TabInhalt
-                    tab={tab}
-                    transkript={transkript}
-                    onWaehleDokumentTyp={(typ) => setzeDokumentTyp(tab.id, typ)}
-                    onAendereInhalt={(inhalt) => setzeInhalt(tab.id, inhalt)}
-                    onAbbrechen={() => schliesseTab(tab.id)}
-                  />
-                </TabsContent>
-              ))}
-            </Tabs>
-          )}
-        </CardContent>
-        <CardFooter className="gap-2">
-          <Button
-            variant="outline"
-            disabled={!exportText}
-            onClick={() => alsPdfHerunterladen(exportTitel, exportText)}
-          >
-            PDF
-          </Button>
-          <Button
-            variant="outline"
-            disabled={!exportText}
-            onClick={() => alsWordHerunterladen(exportTitel, exportText)}
-          >
-            Word
-          </Button>
-          <Button variant="outline" onClick={() => setMailOffen(true)}>
-            <MailIcon />
-            Mail
-          </Button>
-        </CardFooter>
-      </Card>
-
-      {/* Rechte Spalte: KI-Chat */}
-      <Card className="min-h-0">
-        <CardHeader>
-          <CardTitle>KI-Chat</CardTitle>
-        </CardHeader>
-        <CardContent className="flex min-h-0 flex-1 flex-col gap-3">
-          <ScrollArea className="min-h-0 flex-1">
-            <div className="flex flex-col gap-4 pr-3">
-              {chatVerlauf.map((nachricht) => {
-                const istKi = nachricht.rolle === "ki";
-                return (
-                  <Fragment key={nachricht.id}>
-                    <Message align={istKi ? "start" : "end"}>
-                      <MessageContent>
-                        <div
-                          className={`max-w-[85%] rounded-lg px-3 py-2 ${
-                            istKi
-                              ? "self-start bg-muted"
-                              : "self-end bg-primary text-primary-foreground"
-                          }`}
-                        >
-                          {nachricht.text}
-                        </div>
-                      </MessageContent>
-                    </Message>
-                    {nachricht.aktion && (
-                      <div className="flex flex-col gap-2">
-                        <Marker>
-                          <MarkerIcon>
-                            <FileTextIcon />
-                          </MarkerIcon>
-                          <MarkerContent>{nachricht.aktion}</MarkerContent>
-                        </Marker>
-                        {nachricht.hatAenderungsAktion && (
-                          <>
-                            <Marker>
-                              <MarkerIcon>
-                                <CheckIcon />
-                              </MarkerIcon>
-                              <MarkerContent>Änderung übernehmen</MarkerContent>
-                            </Marker>
-                            <Marker>
-                              <MarkerIcon>
-                                <RotateCcwIcon />
-                              </MarkerIcon>
-                              <MarkerContent>Änderung verwerfen</MarkerContent>
-                            </Marker>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </Fragment>
-                );
-              })}
+              </div>
+            </ScrollArea>
+            <div className="flex items-end gap-2">
+              <Textarea
+                placeholder="Nachricht an die KI"
+                className="flex-1"
+                value={chatEingabe}
+                onChange={(event) => setChatEingabe(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    nachrichtSenden();
+                  }
+                }}
+              />
+              <Button
+                size="icon"
+                aria-label="Senden"
+                disabled={!chatEingabe.trim()}
+                onClick={nachrichtSenden}
+              >
+                <SendIcon />
+              </Button>
             </div>
-          </ScrollArea>
-          <div className="flex items-end gap-2">
-            <Textarea
-              placeholder="Nachricht an die KI"
-              className="flex-1"
-              value={chatEingabe}
-              onChange={(event) => setChatEingabe(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  nachrichtSenden();
-                }
-              }}
-            />
-            <Button
-              size="icon"
-              aria-label="Senden"
-              disabled={!chatEingabe.trim()}
-              onClick={nachrichtSenden}
-            >
-              <SendIcon />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      <MailDialog
-        open={mailOffen}
-        onOpenChange={setMailOffen}
-        betroffeneVertraege={betroffeneVertraege}
-        deadline={metadaten.deadline}
-        dokumentTyp={aktuellerTab?.dokumentTyp}
-        dokumentText={mailText}
-        zusammenfassung={zusammenfassung}
-      />
+        <MailDialog
+          open={mailOffen}
+          onOpenChange={setMailOffen}
+          betroffeneVertraege={betroffeneVertraege}
+          deadline={metadaten.deadline}
+          dokumentTyp={aktuellerTab?.dokumentTyp}
+          dokumentText={mailText}
+          zusammenfassung={zusammenfassung}
+        />
       </div>
     </div>
   );
@@ -808,7 +897,8 @@ const leiteEmpfaengerAb = (firmenname: string) => {
   return `${slug}.bau@yahoo.de`;
 };
 
-const formatiereDatum = (iso: string) => new Date(iso).toLocaleDateString("de-DE");
+const formatiereDatum = (iso: string) =>
+  new Date(iso).toLocaleDateString("de-DE");
 
 export function MailDialog({
   open,
@@ -838,15 +928,25 @@ export function MailDialog({
     }
   };
 
-  const dienstName = MAIL_DIENSTE.find((eintrag) => eintrag.id === dienst)?.name;
+  const dienstName = MAIL_DIENSTE.find(
+    (eintrag) => eintrag.id === dienst,
+  )?.name;
 
-  const empfaenger = [...new Set(betroffeneVertraege.map((eintrag) => eintrag.unternehmer))]
+  const empfaenger = [
+    ...new Set(betroffeneVertraege.map((eintrag) => eintrag.unternehmer)),
+  ]
     .map(leiteEmpfaengerAb)
     .join(", ");
-  const betreff = [dokumentTyp, betroffeneVertraege[0]?.vertrag.replace(/\.pdf$/, ""), BAUVORHABEN]
+  const betreff = [
+    dokumentTyp,
+    betroffeneVertraege[0]?.vertrag.replace(/\.pdf$/, ""),
+    BAUVORHABEN,
+  ]
     .filter(Boolean)
     .join(" – ");
-  const frist = deadline ? `\n\nBitte um Rückmeldung bis ${formatiereDatum(deadline)}.` : "";
+  const frist = deadline
+    ? `\n\nBitte um Rückmeldung bis ${formatiereDatum(deadline)}.`
+    : "";
   const nachricht = dokumentText
     ? `${dokumentText}${frist}`
     : `Sehr geehrte Damen und Herren,\n\n${zusammenfassung}${frist}\n\nMit freundlichen Grüßen\nBauleitung`;
@@ -868,7 +968,8 @@ export function MailDialog({
             <DialogHeader>
               <DialogTitle>Mail-Dienst auswählen</DialogTitle>
               <DialogDescription>
-                Die Auswahl wird gespeichert und beim nächsten Mal automatisch verwendet.
+                Die Auswahl wird gespeichert und beim nächsten Mal automatisch
+                verwendet.
               </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-2">
@@ -932,7 +1033,8 @@ function MailEntwurf({
       <DialogHeader>
         <DialogTitle>Mail über {dienstName}</DialogTitle>
         <DialogDescription>
-          Entwurf aus den Metadaten und dem Dokument. Alle Felder sind bearbeitbar.
+          Entwurf aus den Metadaten und dem Dokument. Alle Felder sind
+          bearbeitbar.
         </DialogDescription>
       </DialogHeader>
       <div className="flex flex-col gap-3">
@@ -977,7 +1079,10 @@ function MailEntwurf({
           <Button variant="outline" onClick={onSchliessen}>
             Abbrechen
           </Button>
-          <Button disabled={!empfaenger.trim()} onClick={() => setGesendet(true)}>
+          <Button
+            disabled={!empfaenger.trim()}
+            onClick={() => setGesendet(true)}
+          >
             <SendIcon />
             Senden
           </Button>
@@ -1015,7 +1120,9 @@ function Metadaten({
         onClick={() => setShowMetadata((current) => !current)}
       >
         Metadaten
-        <ChevronDownIcon className={`transition-transform ${showMetadata ? "rotate-180" : ""}`} />
+        <ChevronDownIcon
+          className={`transition-transform ${showMetadata ? "rotate-180" : ""}`}
+        />
       </Button>
 
       {showMetadata && (
@@ -1023,11 +1130,16 @@ function Metadaten({
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs text-muted-foreground">Datum</span>
             <span className="text-xs tabular-nums">
-              {datum.toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}
+              {datum.toLocaleString("de-DE", {
+                dateStyle: "short",
+                timeStyle: "short",
+              })}
             </span>
           </div>
           <div className="flex flex-col gap-2">
-            <span className="text-xs text-muted-foreground">Betroffene Verträge</span>
+            <span className="text-xs text-muted-foreground">
+              Betroffene Verträge
+            </span>
             {betroffeneVertraege.length === 0 ? (
               <span className="text-xs">Keine Auswahl</span>
             ) : (
@@ -1038,7 +1150,9 @@ function Metadaten({
                     className="flex items-center justify-between gap-2 rounded-md border p-2"
                   >
                     <div className="flex min-w-0 flex-col">
-                      <span className="truncate text-xs">{eintrag.vertrag}</span>
+                      <span className="truncate text-xs">
+                        {eintrag.vertrag}
+                      </span>
                       <span className="truncate text-xs text-muted-foreground">
                         {eintrag.unternehmer}
                       </span>
@@ -1091,7 +1205,10 @@ function PrioritySelect({
   onChange: (priority: number) => void;
 }) {
   return (
-    <Select value={String(value)} onValueChange={(next) => onChange(Number(next))}>
+    <Select
+      value={String(value)}
+      onValueChange={(next) => onChange(Number(next))}
+    >
       <SelectTrigger
         size="sm"
         hideIcon
@@ -1131,7 +1248,11 @@ function SubunternehmerEintrag({
   const [offen, setOffen] = useState(false);
 
   return (
-    <Collapsible open={offen} onOpenChange={setOffen} className="rounded-md border">
+    <Collapsible
+      open={offen}
+      onOpenChange={setOffen}
+      className="rounded-md border"
+    >
       <div className="flex items-center gap-2 p-2">
         <span className="flex-1 text-xs font-medium">{name}</span>
         <CollapsibleTrigger asChild>
@@ -1140,7 +1261,9 @@ function SubunternehmerEintrag({
             size="icon-sm"
             aria-label={`Verträge von ${name} ${offen ? "ausblenden" : "anzeigen"}`}
           >
-            <ChevronDownIcon className={`transition-transform ${offen ? "rotate-180" : ""}`} />
+            <ChevronDownIcon
+              className={`transition-transform ${offen ? "rotate-180" : ""}`}
+            />
           </Button>
         </CollapsibleTrigger>
       </div>
@@ -1198,12 +1321,22 @@ function TabInhalt({
   if (url && mime?.startsWith("image/")) {
     return (
       <div className="flex min-h-0 flex-1 items-center justify-center rounded-md border bg-muted p-2">
-        <img src={url} alt={name} className="max-h-full max-w-full object-contain" />
+        <img
+          src={url}
+          alt={name}
+          className="max-h-full max-w-full object-contain"
+        />
       </div>
     );
   }
   if (url) {
-    return <iframe src={url} title={name} className="min-h-0 flex-1 rounded-md border bg-muted" />;
+    return (
+      <iframe
+        src={url}
+        title={name}
+        className="min-h-0 flex-1 rounded-md border bg-muted"
+      />
+    );
   }
 
   if (tab.typ === "dokument") {
@@ -1215,7 +1348,10 @@ function TabInhalt({
         className="min-h-0 flex-1 resize-none text-xs field-sizing-fixed"
       />
     ) : (
-      <DokumentTypAuswahl onWaehle={onWaehleDokumentTyp} onAbbrechen={onAbbrechen} />
+      <DokumentTypAuswahl
+        onWaehle={onWaehleDokumentTyp}
+        onAbbrechen={onAbbrechen}
+      />
     );
   }
 

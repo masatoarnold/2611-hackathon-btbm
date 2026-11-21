@@ -56,7 +56,10 @@ const upsertMeldung = db.query(`INSERT INTO meldungen
     vorgangstyp = excluded.vorgangstyp, status = excluded.status, attachments = excluded.attachments`);
 
 export function speichereMeldung(meldung: Meldung) {
-  upsertMeldung.run({ ...meldung, attachments: JSON.stringify(meldung.attachments) });
+  upsertMeldung.run({
+    ...meldung,
+    attachments: JSON.stringify(meldung.attachments),
+  });
 }
 
 /** All Meldungen except rejected ones, newest first. */
@@ -70,7 +73,9 @@ export function listeMeldungen(): Meldung[] {
 }
 
 export function findeMeldung(id: string): Meldung | null {
-  const zeile = db.query<MeldungZeile, [string]>("SELECT * FROM meldungen WHERE id = ?").get(id);
+  const zeile = db
+    .query<MeldungZeile, [string]>("SELECT * FROM meldungen WHERE id = ?")
+    .get(id);
   return zeile ? zuMeldung(zeile) : null;
 }
 
@@ -79,13 +84,15 @@ export function loescheMeldung(id: string): boolean {
 }
 
 export function speichereDatei(datei: DateiZeile) {
-  db.query("INSERT INTO dateien (id, name, mime, pfad) VALUES ($id, $name, $mime, $pfad)").run(
-    datei,
-  );
+  db.query(
+    "INSERT INTO dateien (id, name, mime, pfad) VALUES ($id, $name, $mime, $pfad)",
+  ).run(datei);
 }
 
 export function findeDatei(id: string): DateiZeile | null {
-  return db.query<DateiZeile, [string]>("SELECT * FROM dateien WHERE id = ?").get(id);
+  return db
+    .query<DateiZeile, [string]>("SELECT * FROM dateien WHERE id = ?")
+    .get(id);
 }
 
 const { anzahl } = db
@@ -93,5 +100,7 @@ const { anzahl } = db
   .get()!;
 if (anzahl === 0) {
   db.transaction(() => SEED_MELDUNGEN.forEach(speichereMeldung))();
-  console.log(`📋 Datenbank mit ${SEED_MELDUNGEN.length} Beispiel-Meldungen angelegt`);
+  console.log(
+    `📋 Datenbank mit ${SEED_MELDUNGEN.length} Beispiel-Meldungen angelegt`,
+  );
 }

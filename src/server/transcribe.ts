@@ -7,20 +7,32 @@ const MODEL = "microsoft/mai-transcribe-2";
 export async function handleTranscribe(req: Request): Promise<Response> {
   const apiKey = await loadApiKey("openrouter");
   if (!apiKey) {
-    return Response.json({ error: "Kein OpenRouter-API-Key gefunden." }, { status: 500 });
+    return Response.json(
+      { error: "Kein OpenRouter-API-Key gefunden." },
+      { status: 500 },
+    );
   }
 
   const audio = await req.arrayBuffer();
   if (audio.byteLength === 0) {
-    return Response.json({ error: "Keine Audiodaten erhalten." }, { status: 400 });
+    return Response.json(
+      { error: "Keine Audiodaten erhalten." },
+      { status: 400 },
+    );
   }
 
   const upstream = await fetch(OPENROUTER_URL, {
     method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
       model: MODEL,
-      input_audio: { data: Buffer.from(audio).toString("base64"), format: "wav" },
+      input_audio: {
+        data: Buffer.from(audio).toString("base64"),
+        format: "wav",
+      },
     }),
   });
   const result = await upstream.json().catch(() => null);

@@ -1,7 +1,13 @@
 import { Button } from "@/components/ui/button";
 
 /** Title bar shared by all Cockpit pages: title, project and a link to the site app. */
-export function CockpitHeader({ projekt, datum }: { projekt: string; datum: string }) {
+export function CockpitHeader({
+  projekt,
+  datum,
+}: {
+  projekt: string;
+  datum: string;
+}) {
   return (
     <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-card px-6 shadow-sm">
       <div className="flex items-baseline gap-3">

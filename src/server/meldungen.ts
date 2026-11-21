@@ -47,17 +47,25 @@ export type MeldungStatus = Meldung["status"];
 export const LIVE_TOPIC = "meldungen";
 
 type Publisher = { publish(topic: string, data: string): unknown };
-const meldeAenderung = (server: Publisher) => server.publish(LIVE_TOPIC, "changed");
+const meldeAenderung = (server: Publisher) =>
+  server.publish(LIVE_TOPIC, "changed");
 
-const nichtGefunden = () => Response.json({ error: "Meldung nicht gefunden." }, { status: 404 });
+const nichtGefunden = () =>
+  Response.json({ error: "Meldung nicht gefunden." }, { status: 404 });
 const ungueltig = (error: z.ZodError) =>
-  Response.json({ error: "Ungültige Daten.", details: z.treeifyError(error) }, { status: 400 });
+  Response.json(
+    { error: "Ungültige Daten.", details: z.treeifyError(error) },
+    { status: 400 },
+  );
 
 export function handleListeMeldungen(): Response {
   return Response.json(listeMeldungen());
 }
 
-export async function handleErstelleMeldung(req: Request, server: Publisher): Promise<Response> {
+export async function handleErstelleMeldung(
+  req: Request,
+  server: Publisher,
+): Promise<Response> {
   const parsed = MeldungSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return ungueltig(parsed.error);
   speichereMeldung(parsed.data);
@@ -65,7 +73,9 @@ export async function handleErstelleMeldung(req: Request, server: Publisher): Pr
   return Response.json(parsed.data, { status: 201 });
 }
 
-export function handleLadeMeldung(req: BunRequest<"/api/meldungen/:id">): Response {
+export function handleLadeMeldung(
+  req: BunRequest<"/api/meldungen/:id">,
+): Response {
   const meldung = findeMeldung(req.params.id);
   return meldung ? Response.json(meldung) : nichtGefunden();
 }
@@ -76,7 +86,9 @@ export async function handleAendereMeldung(
 ): Promise<Response> {
   const vorhanden = findeMeldung(req.params.id);
   if (!vorhanden) return nichtGefunden();
-  const parsed = MeldungAenderungSchema.safeParse(await req.json().catch(() => null));
+  const parsed = MeldungAenderungSchema.safeParse(
+    await req.json().catch(() => null),
+  );
   if (!parsed.success) return ungueltig(parsed.error);
   const meldung = { ...vorhanden, ...parsed.data };
   speichereMeldung(meldung);
@@ -119,7 +131,8 @@ export async function handleLadeDateiHoch(req: Request): Promise<Response> {
 
 export function handleLadeDatei(req: BunRequest<"/api/dateien/:id">): Response {
   const datei = findeDatei(req.params.id);
-  if (!datei) return Response.json({ error: "Datei nicht gefunden." }, { status: 404 });
+  if (!datei)
+    return Response.json({ error: "Datei nicht gefunden." }, { status: 404 });
   return new Response(Bun.file(datei.pfad), {
     headers: {
       "Content-Type": datei.mime,

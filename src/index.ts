@@ -21,7 +21,10 @@ const server = serve({
     "/api/transcribe": { POST: handleTranscribe },
     "/api/summarize": { POST: handleSummarize },
 
-    "/api/meldungen": { GET: handleListeMeldungen, POST: handleErstelleMeldung },
+    "/api/meldungen": {
+      GET: handleListeMeldungen,
+      POST: handleErstelleMeldung,
+    },
     "/api/meldungen/:id": {
       GET: handleLadeMeldung,
       PATCH: handleAendereMeldung,
@@ -32,7 +35,9 @@ const server = serve({
 
     // Live updates: clients get "changed" after every write and refetch.
     "/api/live": (req, server) =>
-      server.upgrade(req) ? undefined : new Response("WebSocket erwartet.", { status: 400 }),
+      server.upgrade(req)
+        ? undefined
+        : new Response("WebSocket erwartet.", { status: 400 }),
 
     "/api/hello": {
       GET() {

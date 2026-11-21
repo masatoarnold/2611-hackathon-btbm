@@ -13,7 +13,10 @@ export function useDictation(onTranscript: (text: string) => void) {
 
   useEffect(() => {
     if (status !== "recording") return;
-    const id = window.setInterval(() => setElapsed((seconds) => seconds + 1), 1000);
+    const id = window.setInterval(
+      () => setElapsed((seconds) => seconds + 1),
+      1000,
+    );
     return () => window.clearInterval(id);
   }, [status]);
 
@@ -39,9 +42,15 @@ export function useDictation(onTranscript: (text: string) => void) {
         stream.getTracks().forEach((track) => track.stop());
         setStatus("transcribing");
         try {
-          onTranscript(await transcribe(new Blob(chunks, { type: recorder.mimeType })));
+          onTranscript(
+            await transcribe(new Blob(chunks, { type: recorder.mimeType })),
+          );
         } catch (cause) {
-          setError(cause instanceof Error ? cause.message : "Transkription fehlgeschlagen.");
+          setError(
+            cause instanceof Error
+              ? cause.message
+              : "Transkription fehlgeschlagen.",
+          );
         } finally {
           setStatus("idle");
         }
@@ -67,7 +76,8 @@ async function transcribe(recording: Blob): Promise<string> {
     body: await toWav(recording),
   });
   const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(result.error ?? "Transkription fehlgeschlagen.");
+  if (!response.ok)
+    throw new Error(result.error ?? "Transkription fehlgeschlagen.");
   return result.text ?? "";
 }
 
@@ -77,7 +87,11 @@ async function toWav(recording: Blob): Promise<Blob> {
   const decoded = await context.decodeAudioData(await recording.arrayBuffer());
   await context.close();
 
-  const offline = new OfflineAudioContext(1, Math.ceil(decoded.duration * SAMPLE_RATE), SAMPLE_RATE);
+  const offline = new OfflineAudioContext(
+    1,
+    Math.ceil(decoded.duration * SAMPLE_RATE),
+    SAMPLE_RATE,
+  );
   const source = offline.createBufferSource();
   source.buffer = decoded;
   source.connect(offline.destination);
@@ -91,7 +105,9 @@ function encodeWav(samples: Float32Array, sampleRate: number): Blob {
   const dataSize = samples.length * 2;
   const view = new DataView(new ArrayBuffer(44 + dataSize));
   const writeText = (offset: number, text: string) =>
-    [...text].forEach((char, index) => view.setUint8(offset + index, char.charCodeAt(0)));
+    [...text].forEach((char, index) =>
+      view.setUint8(offset + index, char.charCodeAt(0)),
+    );
 
   writeText(0, "RIFF");
   view.setUint32(4, 36 + dataSize, true);
@@ -109,7 +125,11 @@ function encodeWav(samples: Float32Array, sampleRate: number): Blob {
 
   samples.forEach((sample, index) => {
     const clamped = Math.max(-1, Math.min(1, sample));
-    view.setInt16(44 + index * 2, clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff, true);
+    view.setInt16(
+      44 + index * 2,
+      clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff,
+      true,
+    );
   });
 
   return new Blob([view.buffer], { type: "audio/wav" });

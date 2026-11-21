@@ -52,9 +52,13 @@ export function erstellePdf(titel: string, text: string) {
   const seitenEnde = pdf.internal.pageSize.getHeight() - PDF_RAND_MM;
 
   const [ersteZeile = "", ...rest] = fuerPdf(text).split("\n");
-  const ersteZeileIstTitel = ersteZeile.toLowerCase().includes(titel.toLowerCase());
+  const ersteZeileIstTitel = ersteZeile
+    .toLowerCase()
+    .includes(titel.toLowerCase());
   const ueberschrift = ersteZeileIstTitel ? ersteZeile : fuerPdf(titel);
-  const inhalt = ersteZeileIstTitel ? rest.join("\n").replace(/^\n+/, "") : fuerPdf(text);
+  const inhalt = ersteZeileIstTitel
+    ? rest.join("\n").replace(/^\n+/, "")
+    : fuerPdf(text);
 
   let y = PDF_RAND_MM;
   pdf.setFont("helvetica", "bold");
@@ -81,7 +85,10 @@ export function erstellePdf(titel: string, text: string) {
 
 /** Downloads the text as an A4 PDF file. */
 export function alsPdfHerunterladen(titel: string, text: string) {
-  herunterladen(erstellePdf(titel, text).output("blob"), dateiname(titel, "pdf"));
+  herunterladen(
+    erstellePdf(titel, text).output("blob"),
+    dateiname(titel, "pdf"),
+  );
 }
 
 /** Opens the text in a new window to read it. */

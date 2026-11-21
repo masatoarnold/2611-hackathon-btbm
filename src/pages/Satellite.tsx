@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ReactNode,
+} from "react";
 import {
   ArrowLeftIcon,
   CameraIcon,
@@ -18,7 +24,13 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Item, ItemActions, ItemContent, ItemDescription, ItemTitle } from "@/components/ui/item";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemTitle,
+} from "@/components/ui/item";
 import {
   Select,
   SelectContent,
@@ -59,7 +71,10 @@ const PRIORITY_COLORS: Record<number, string> = {
 };
 
 const formatTimestamp = (iso: string) =>
-  new Date(iso).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" });
+  new Date(iso).toLocaleString("de-DE", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
 
 const formatDuration = (seconds: number) =>
   `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
@@ -124,8 +139,11 @@ export function Satellite() {
 
   /** Typed text is saved after a short pause, everything else right away. */
   const updateReport = (id: string, changes: Partial<Omit<Report, "id">>) =>
-    aendere(id, changes, { sofort: !("content" in changes || "location" in changes) });
-  const changePriority = (id: string, priority: number) => updateReport(id, { priority });
+    aendere(id, changes, {
+      sofort: !("content" in changes || "location" in changes),
+    });
+  const changePriority = (id: string, priority: number) =>
+    updateReport(id, { priority });
 
   return (
     <div
@@ -162,12 +180,22 @@ export function Satellite() {
             <ReportDetail
               report={reports.find((report) => report.id === view.id)}
               onBack={() =>
-                setView(view.from === "new" ? { name: "new", id: view.id } : { name: "list" })
+                setView(
+                  view.from === "new"
+                    ? { name: "new", id: view.id }
+                    : { name: "list" },
+                )
               }
               onChange={(content) => updateReport(view.id, { content })}
-              onChangeLocation={(location) => updateReport(view.id, { location })}
-              onChangeVorgangstyp={(vorgangstyp) => updateReport(view.id, { vorgangstyp })}
-              onChangeAttachments={(attachments) => updateReport(view.id, { attachments })}
+              onChangeLocation={(location) =>
+                updateReport(view.id, { location })
+              }
+              onChangeVorgangstyp={(vorgangstyp) =>
+                updateReport(view.id, { vorgangstyp })
+              }
+              onChangeAttachments={(attachments) =>
+                updateReport(view.id, { attachments })
+              }
               onChangePriority={(priority) => changePriority(view.id, priority)}
               onDelete={() => {
                 deleteReport(view.id);
@@ -201,7 +229,10 @@ function ReportList({
     <div className="flex flex-1 flex-col gap-3">
       {reports.map((report) => (
         <Item key={report.id} variant="outline">
-          <ItemContent className="cursor-pointer" onClick={() => onOpen(report.id)}>
+          <ItemContent
+            className="cursor-pointer"
+            onClick={() => onOpen(report.id)}
+          >
             <ItemTitle>{report.title}</ItemTitle>
             <ItemDescription>{report.content}</ItemDescription>
             {report.status === "abgeschlossen" && (
@@ -220,10 +251,16 @@ function ReportList({
         </Item>
       ))}
       {reports.length === 0 && (
-        <p className="text-sm text-muted-foreground">Noch keine Aufzeichnungen.</p>
+        <p className="text-sm text-muted-foreground">
+          Noch keine Aufzeichnungen.
+        </p>
       )}
       <StickyActionBar className="justify-center">
-        <Button size="icon-lg" className="size-20 rounded-full" onClick={onCreate}>
+        <Button
+          size="icon-lg"
+          className="size-20 rounded-full"
+          onClick={onCreate}
+        >
           <PlusIcon className="size-10" />
         </Button>
       </StickyActionBar>
@@ -249,7 +286,12 @@ function StickyActionBar({
 
 function PriorityFlag({ priority }: { priority: number }) {
   const color = PRIORITY_COLORS[priority];
-  return <FlagIcon className="size-5" style={{ color, fill: color, stroke: color }} />;
+  return (
+    <FlagIcon
+      className="size-5"
+      style={{ color, fill: color, stroke: color }}
+    />
+  );
 }
 
 function PrioritySelect({
@@ -260,7 +302,10 @@ function PrioritySelect({
   onChange: (priority: number) => void;
 }) {
   return (
-    <Select value={String(value)} onValueChange={(next) => onChange(Number(next))}>
+    <Select
+      value={String(value)}
+      onValueChange={(next) => onChange(Number(next))}
+    >
       <SelectTrigger
         size="sm"
         hideIcon
@@ -274,7 +319,11 @@ function PrioritySelect({
       </SelectTrigger>
       <SelectContent position="popper" align="end" className="min-w-0">
         {PRIORITIES.map((priority) => (
-          <SelectItem key={priority} value={String(priority)} className="min-h-12 pr-7 text-base">
+          <SelectItem
+            key={priority}
+            value={String(priority)}
+            className="min-h-12 pr-7 text-base"
+          >
             <PriorityFlag priority={priority} />
             {priority}
           </SelectItem>
@@ -293,7 +342,9 @@ function NewReport({
   onFinish: (report: Report) => void;
   onCancel: () => void;
 }) {
-  const [vorgangstyp, setVorgangstyp] = useState<string | null>(initialReport?.vorgangstyp ?? null);
+  const [vorgangstyp, setVorgangstyp] = useState<string | null>(
+    initialReport?.vorgangstyp ?? null,
+  );
   const [transcript, setTranscript] = useState("");
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [finishAfterProcessing, setFinishAfterProcessing] = useState(false);
@@ -305,10 +356,16 @@ function NewReport({
   const isRecording = dictation.status === "recording";
   const [manualText, setManualText] = useState("");
   const [showMetadata, setShowMetadata] = useState(false);
-  const [timestamp] = useState(() => initialReport?.timestamp ?? new Date().toISOString());
+  const [timestamp] = useState(
+    () => initialReport?.timestamp ?? new Date().toISOString(),
+  );
   const [location, setLocation] = useState(initialReport?.location ?? "");
-  const [priority, setPriority] = useState(initialReport?.priority ?? DEFAULT_PRIORITY);
-  const [attachments, setAttachments] = useState<Anhang[]>(initialReport?.attachments ?? []);
+  const [priority, setPriority] = useState(
+    initialReport?.priority ?? DEFAULT_PRIORITY,
+  );
+  const [attachments, setAttachments] = useState<Anhang[]>(
+    initialReport?.attachments ?? [],
+  );
   const [isUploading, setIsUploading] = useState(false);
   const [summary, setSummary] = useState<ReportSummary | null>(null);
   const [summaryError, setSummaryError] = useState<string | null>(null);
@@ -334,7 +391,8 @@ function NewReport({
     };
   }, [transcript]);
 
-  const isBusy = dictation.status === "transcribing" || isSummarizing || isUploading;
+  const isBusy =
+    dictation.status === "transcribing" || isSummarizing || isUploading;
 
   const finish = () =>
     onFinish({
@@ -384,7 +442,11 @@ function NewReport({
             disabled={isBusy}
             onClick={isRecording ? dictation.stop : dictation.start}
           >
-            {isRecording ? <SquareIcon className="size-6" /> : <MicIcon className="size-6" />}
+            {isRecording ? (
+              <SquareIcon className="size-6" />
+            ) : (
+              <MicIcon className="size-6" />
+            )}
           </Button>
           <span className="text-sm tabular-nums">
             {dictation.status === "recording" &&
@@ -394,7 +456,9 @@ function NewReport({
               (isSummarizing ? "Wird zusammengefasst…" : "Ton aufzeichnen")}
           </span>
           {(dictation.error ?? summaryError) && (
-            <span className="text-sm text-destructive">{dictation.error ?? summaryError}</span>
+            <span className="text-sm text-destructive">
+              {dictation.error ?? summaryError}
+            </span>
           )}
         </CardContent>
       </Card>
@@ -414,7 +478,9 @@ function NewReport({
           onClick={() => setShowMetadata((current) => !current)}
         >
           Metadaten
-          <ChevronDownIcon className={`transition-transform ${showMetadata ? "rotate-180" : ""}`} />
+          <ChevronDownIcon
+            className={`transition-transform ${showMetadata ? "rotate-180" : ""}`}
+          />
         </Button>
 
         {showMetadata && (
@@ -427,15 +493,25 @@ function NewReport({
                   setVorgangstyp(next === NO_VORGANGSTYP_VALUE ? null : next)
                 }
               >
-                <SelectTrigger aria-label="Vorgangstyp auswählen" className="w-48">
+                <SelectTrigger
+                  aria-label="Vorgangstyp auswählen"
+                  className="w-48"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent position="popper">
-                  <SelectItem value={NO_VORGANGSTYP_VALUE} className="min-h-12 text-base">
+                  <SelectItem
+                    value={NO_VORGANGSTYP_VALUE}
+                    className="min-h-12 text-base"
+                  >
                     Keine Auswahl
                   </SelectItem>
                   {VORGANGSTYPEN.map((name) => (
-                    <SelectItem key={name} value={name} className="min-h-12 text-base">
+                    <SelectItem
+                      key={name}
+                      value={name}
+                      className="min-h-12 text-base"
+                    >
                       {name}
                     </SelectItem>
                   ))}
@@ -444,7 +520,9 @@ function NewReport({
             </div>
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm text-muted-foreground">Zeitstempel</span>
-              <span className="text-base tabular-nums">{formatTimestamp(timestamp)}</span>
+              <span className="text-base tabular-nums">
+                {formatTimestamp(timestamp)}
+              </span>
             </div>
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm text-muted-foreground">Ort</span>
@@ -474,8 +552,16 @@ function NewReport({
         <Button variant="ghost" size="lg" onClick={onCancel}>
           Abbrechen
         </Button>
-        <Button size="lg" disabled={isBusy || finishAfterProcessing} onClick={handleContinue}>
-          {finishAfterProcessing ? <LoaderCircleIcon className="animate-spin" /> : "Weiter"}
+        <Button
+          size="lg"
+          disabled={isBusy || finishAfterProcessing}
+          onClick={handleContinue}
+        >
+          {finishAfterProcessing ? (
+            <LoaderCircleIcon className="animate-spin" />
+          ) : (
+            "Weiter"
+          )}
         </Button>
       </StickyActionBar>
     </div>
@@ -500,7 +586,10 @@ function PhotoAttachments({
   const photosRef = useRef(photos);
   photosRef.current = photos;
 
-  useEffect(() => onUploadingChange?.(pendingUploads > 0), [pendingUploads, onUploadingChange]);
+  useEffect(
+    () => onUploadingChange?.(pendingUploads > 0),
+    [pendingUploads, onUploadingChange],
+  );
 
   const addPhotos = async (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files ?? []);
@@ -512,13 +601,16 @@ function PhotoAttachments({
       const uploaded = await Promise.all(selectedFiles.map(ladeDateiHoch));
       onChange([...photosRef.current, ...uploaded]);
     } catch (error) {
-      setUploadError(error instanceof Error ? error.message : "Hochladen fehlgeschlagen.");
+      setUploadError(
+        error instanceof Error ? error.message : "Hochladen fehlgeschlagen.",
+      );
     } finally {
       setPendingUploads((count) => count - selectedFiles.length);
     }
   };
 
-  const removePhoto = (id: string) => onChange(photos.filter((photo) => photo.id !== id));
+  const removePhoto = (id: string) =>
+    onChange(photos.filter((photo) => photo.id !== id));
 
   return (
     <div className="flex flex-col gap-2">
@@ -563,13 +655,22 @@ function PhotoAttachments({
           <PlusIcon className="size-6" />
         </Button>
       </div>
-      {uploadError && <p className="pl-4 text-sm text-destructive">{uploadError}</p>}
+      {uploadError && (
+        <p className="pl-4 text-sm text-destructive">{uploadError}</p>
+      )}
       {(photos.length > 0 || pendingUploads > 0) && (
         <div className="grid grid-cols-3 gap-2">
           {photos.map((photo) => (
-            <div key={photo.id} className="relative aspect-square overflow-hidden rounded-md border">
+            <div
+              key={photo.id}
+              className="relative aspect-square overflow-hidden rounded-md border"
+            >
               {photo.typ === "bild" && photo.url ? (
-                <img src={photo.url} alt={photo.name} className="size-full object-cover" />
+                <img
+                  src={photo.url}
+                  alt={photo.name}
+                  className="size-full object-cover"
+                />
               ) : (
                 <div className="flex size-full flex-col items-center justify-center gap-1 bg-muted p-1 text-center text-xs text-muted-foreground">
                   {photo.typ === "bild" ? <ImageIcon /> : <FileTextIcon />}
@@ -627,7 +728,12 @@ function ReportDetail({
     <>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2">
-          <Button variant="ghost" className="size-14" aria-label="Zurück" onClick={onBack}>
+          <Button
+            variant="ghost"
+            className="size-14"
+            aria-label="Zurück"
+            onClick={onBack}
+          >
             <ArrowLeftIcon className="size-7" />
           </Button>
           <CardTitle className="flex-1">{report.title}</CardTitle>
@@ -647,25 +753,39 @@ function ReportDetail({
           <div className="flex flex-col gap-6 rounded-md border p-4 text-base">
             <div className="flex items-center justify-between gap-2">
               <span className="text-muted-foreground">Zeitstempel</span>
-              <span className="tabular-nums">{formatTimestamp(report.timestamp)}</span>
+              <span className="tabular-nums">
+                {formatTimestamp(report.timestamp)}
+              </span>
             </div>
             <div className="flex items-center justify-between gap-2">
               <span className="text-muted-foreground">Vorgangstyp</span>
               <Select
                 value={report.vorgangstyp ?? NO_VORGANGSTYP_VALUE}
                 onValueChange={(next) =>
-                  onChangeVorgangstyp(next === NO_VORGANGSTYP_VALUE ? null : next)
+                  onChangeVorgangstyp(
+                    next === NO_VORGANGSTYP_VALUE ? null : next,
+                  )
                 }
               >
-                <SelectTrigger aria-label="Vorgangstyp auswählen" className="w-48">
+                <SelectTrigger
+                  aria-label="Vorgangstyp auswählen"
+                  className="w-48"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent position="popper">
-                  <SelectItem value={NO_VORGANGSTYP_VALUE} className="min-h-12 text-base">
+                  <SelectItem
+                    value={NO_VORGANGSTYP_VALUE}
+                    className="min-h-12 text-base"
+                  >
                     Keine Auswahl
                   </SelectItem>
                   {VORGANGSTYPEN.map((name) => (
-                    <SelectItem key={name} value={name} className="min-h-12 text-base">
+                    <SelectItem
+                      key={name}
+                      value={name}
+                      className="min-h-12 text-base"
+                    >
                       {name}
                     </SelectItem>
                   ))}
@@ -683,7 +803,10 @@ function ReportDetail({
               />
             </div>
           </div>
-          <PhotoAttachments photos={report.attachments} onChange={onChangeAttachments} />
+          <PhotoAttachments
+            photos={report.attachments}
+            onChange={onChangeAttachments}
+          />
         </CardContent>
       </Card>
       <StickyActionBar>
@@ -725,8 +848,11 @@ export function Schedule() {
               <ItemContent>
                 <ItemTitle>{appointment.title}</ItemTitle>
                 <ItemDescription>
-                  bis {formatHour(appointment.startHour + appointment.durationHours)} Uhr ·{" "}
-                  {appointment.own ? "Eigener Termin" : "Fremdgewerk"}
+                  bis{" "}
+                  {formatHour(
+                    appointment.startHour + appointment.durationHours,
+                  )}{" "}
+                  Uhr · {appointment.own ? "Eigener Termin" : "Fremdgewerk"}
                 </ItemDescription>
               </ItemContent>
             </Item>
@@ -745,7 +871,9 @@ function TodoList() {
 
   const toggleTodo = (id: number) =>
     setTodos((current) =>
-      current.map((todo) => (todo.id === id ? { ...todo, done: !todo.done } : todo)),
+      current.map((todo) =>
+        todo.id === id ? { ...todo, done: !todo.done } : todo,
+      ),
     );
 
   const addTodo = () => {
@@ -766,7 +894,10 @@ function TodoList() {
       <CardContent className="flex flex-col gap-5">
         <ul className="flex flex-col gap-3">
           {todos.map((todo) => (
-            <li key={todo.id} className="flex min-h-12 items-center gap-3 text-base">
+            <li
+              key={todo.id}
+              className="flex min-h-12 items-center gap-3 text-base"
+            >
               <Checkbox
                 id={`todo-${todo.id}`}
                 checked={todo.done}
@@ -790,7 +921,9 @@ function TodoList() {
             </li>
           ))}
           {todos.length === 0 && (
-            <p className="text-sm text-muted-foreground">Keine To-dos vorhanden.</p>
+            <p className="text-sm text-muted-foreground">
+              Keine To-dos vorhanden.
+            </p>
           )}
         </ul>
 

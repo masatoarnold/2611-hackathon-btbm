@@ -32,7 +32,8 @@ export const erstelleMeldung = (meldung: Meldung) =>
   anfrage<Meldung>("/api/meldungen", alsJson("POST", meldung));
 export const aktualisiereMeldung = (id: string, aenderung: MeldungAenderung) =>
   anfrage<Meldung>(meldungUrl(id), alsJson("PATCH", aenderung));
-export const loescheMeldung = (id: string) => anfrage<void>(meldungUrl(id), { method: "DELETE" });
+export const loescheMeldung = (id: string) =>
+  anfrage<void>(meldungUrl(id), { method: "DELETE" });
 
 /** Uploads a photo or file to the laptop and returns it as an attachment. */
 export function ladeDateiHoch(datei: File): Promise<Anhang> {
@@ -57,7 +58,8 @@ function useLiveAktualisierung(onAenderung: () => void) {
       socket.onopen = () => callbackRef.current();
       socket.onmessage = () => callbackRef.current();
       socket.onclose = () => {
-        if (!beendet) neuverbindung = window.setTimeout(verbinde, NEUVERBINDUNG_MS);
+        if (!beendet)
+          neuverbindung = window.setTimeout(verbinde, NEUVERBINDUNG_MS);
       };
     };
 
@@ -136,7 +138,9 @@ export function useMeldungen() {
     erstelleMeldung(meldung)
       .then((gespeichert) =>
         setServerStand((aktuell) =>
-          aktuell.some(({ id }) => id === gespeichert.id) ? aktuell : [gespeichert, ...aktuell],
+          aktuell.some(({ id }) => id === gespeichert.id)
+            ? aktuell
+            : [gespeichert, ...aktuell],
         ),
       )
       .catch(meldeFehler)
@@ -144,13 +148,20 @@ export function useMeldungen() {
   };
 
   /** `sofort` saves without the typing delay (e.g. for status, priority or photos). */
-  const aendere = (id: string, aenderung: MeldungAenderung, { sofort = false } = {}) => {
+  const aendere = (
+    id: string,
+    aenderung: MeldungAenderung,
+    { sofort = false } = {},
+  ) => {
     ausstehend.current.set(id, { ...ausstehend.current.get(id), ...aenderung });
     zeigeLokaleAenderungen();
     window.clearTimeout(timer.current.get(id));
     timer.current.set(
       id,
-      window.setTimeout(() => speichere(id), sofort ? 0 : SPEICHER_VERZOEGERUNG_MS),
+      window.setTimeout(
+        () => speichere(id),
+        sofort ? 0 : SPEICHER_VERZOEGERUNG_MS,
+      ),
     );
   };
 
@@ -164,7 +175,9 @@ export function useMeldungen() {
 
   const bekannteIds = new Set(serverStand.map(({ id }) => id));
   const meldungen = [
-    ...[...neueMeldungen.current.values()].filter(({ id }) => !bekannteIds.has(id)).reverse(),
+    ...[...neueMeldungen.current.values()]
+      .filter(({ id }) => !bekannteIds.has(id))
+      .reverse(),
     ...serverStand,
   ]
     .map((meldung) => ({ ...meldung, ...ausstehend.current.get(meldung.id) }))
@@ -179,5 +192,8 @@ export const neueMeldungsId = () =>
   `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 
 /** "Meldung: Betonpumpe defekt" */
-export const anzeigeTitel = ({ title, vorgangstyp }: Pick<Meldung, "title" | "vorgangstyp">) =>
+export const anzeigeTitel = ({
+  title,
+  vorgangstyp,
+}: Pick<Meldung, "title" | "vorgangstyp">) =>
   vorgangstyp ? `${vorgangstyp}: ${title}` : title;
