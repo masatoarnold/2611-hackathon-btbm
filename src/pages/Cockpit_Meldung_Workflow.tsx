@@ -50,50 +50,101 @@ import { Message, MessageContent } from "@/components/ui/message";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 
-// Platzhalterdaten, bis die Anbindung steht
+// Mock-Daten (fiktives Projekt Wohnanlage Lindenhof, Haus B), bis die Anbindung steht
 const SUBUNTERNEHMER = [
   {
-    id: "tiefbau",
-    name: "Subunternehmer Tiefbau",
-    vertraege: ["Rahmenvertrag Tiefbau 2026.pdf", "Nachtrag 1 Erdarbeiten.pdf"],
+    id: "beton",
+    name: "Isar Transportbeton GmbH (Lieferant)",
+    vertraege: ["Liefervertrag Transportbeton 2026.pdf", "Preisliste Beton C25-30.pdf"],
+    leistung: "Lieferung Transportbeton frei Baustelle nach Abruf, mind. 24 h vorher",
+    klausel:
+      "§ 5 Lieferzeit: Liefertermine sind verbindlich. Bei Verspätung über 60 Minuten informiert der Lieferant unverzüglich; Wartezeiten von Pumpe und Kolonne trägt der Lieferant, soweit er sie zu vertreten hat.",
   },
   {
-    id: "elektro",
-    name: "Subunternehmer Elektro",
-    vertraege: ["Werkvertrag Elektro.pdf"],
+    id: "tiefbau",
+    name: "Huber Tiefbau GmbH",
+    vertraege: ["Rahmenvertrag Tiefbau 2026.pdf", "Nachtrag 1 Erdarbeiten.pdf"],
+    leistung: "Baugrube, Verbau, Wasserhaltung und Arbeitsraumverfüllung",
+    klausel:
+      "§ 7 Behinderung: Behinderungen sind dem Auftraggeber unverzüglich schriftlich anzuzeigen (§ 6 Abs. 1 VOB/B).",
   },
   {
     id: "rohbau",
-    name: "Subunternehmer Rohbau",
-    vertraege: ["Rahmenvertrag Rohbau.pdf", "Versicherungsnachweis.pdf"],
+    name: "Kessler Rohbau GmbH & Co. KG",
+    vertraege: ["Werkvertrag Rohbau Haus B.pdf", "Versicherungsnachweis 2026.pdf"],
+    leistung: "Stahlbetonarbeiten UG bis Dach, inkl. Schalung und Bewehrung",
+    klausel:
+      "§ 9 Vertragsstrafe: 0,2 % der Auftragssumme je Werktag Verzug bei Zwischenfrist Fertigstellung UG, max. 5 %.",
   },
   {
-    id: "trockenbau",
-    name: "Subunternehmer Trockenbau",
-    vertraege: ["Werkvertrag Trockenbau.pdf"],
+    id: "pumpe",
+    name: "Brandl Betonpumpen (Gerätemiete)",
+    vertraege: ["Mietvertrag Autobetonpumpe 36 m.pdf"],
+    leistung: "Autobetonpumpe 36 m mit Maschinist, Abrechnung nach Stunden",
+    klausel:
+      "§ 4 Ausfall: Bei technischem Ausfall stellt der Vermieter binnen 3 Stunden ein Ersatzgerät. Ausfallzeiten werden nicht berechnet.",
+  },
+  {
+    id: "elektro",
+    name: "Elektro Lechner GmbH",
+    vertraege: ["Werkvertrag Elektro Haus B.pdf"],
+    leistung: "Baustrom, Erdung und Elektroinstallation Haus B",
+    klausel: "§ 6 Termine: Beginn Rohinstallation nach Fertigstellung Decke über EG.",
   },
   {
     id: "haustechnik",
-    name: "Subunternehmer Haustechnik",
-    vertraege: ["Rahmenvertrag Haustechnik.pdf"],
-  },
-  {
-    id: "dachdeckung",
-    name: "Subunternehmer Dachdeckung",
-    vertraege: ["Werkvertrag Dachdeckung.pdf"],
+    name: "Wagner Haustechnik GmbH",
+    vertraege: ["Werkvertrag Heizung Sanitär Lüftung.pdf"],
+    leistung: "Heizung, Sanitär und Lüftung Haus B",
+    klausel: "§ 6 Termine: Grundleitungen vor Betonage Bodenplatte, Abstimmung mit Rohbau.",
   },
 ];
+
+/** Builds a mock preview for each contract file of a subcontractor. */
+const VERTRAGS_VORSCHAU: Record<string, string> = Object.fromEntries(
+  SUBUNTERNEHMER.flatMap(({ name, vertraege, leistung, klausel }) =>
+    vertraege.map((vertrag) => [
+      vertrag,
+      `${vertrag.replace(/\.pdf$/, "")}\n\nAuftraggeber: Musterbau GmbH\nAuftragnehmer: ${name}\nBauvorhaben: Wohnanlage Lindenhof, Haus B\n\nVertragsgrundlagen: VOB/B in der aktuellen Fassung, Leistungsverzeichnis, Terminplan Rev. 3\n\nLeistung: ${leistung}\n\n${klausel}\n\nGerichtsstand: München`,
+    ]),
+  ),
+);
 
 const ANHAENGE = [
   { name: "Lieferschein_Beton.pdf", beschreibung: "PDF · 240 KB" },
   { name: "Foto_Lieferverzug.jpg", beschreibung: "Bild · 2,1 MB" },
 ];
-const BILDER = ["Bild 1", "Bild 2"];
+const BILDER = ["Fahrmischer im Stau, Zufahrt Nord", "Schalung Kellerwand B, betonierbereit"];
 
 const DOKUMENTTYPEN = ["Behinderungsanzeige", "Tagesbericht", "Bedenkenanzeige", "Meetingprotokoll"];
 
-const ZUSAMMENFASSUNG_PLATZHALTER =
-  "Zusammenfassung des Vorfalls wird hier angezeigt. Dieser Text ist ein Platzhalter und wird später durch die KI-gestützte Auswertung der Meldung ersetzt.";
+const ZUSAMMENFASSUNG_MOCK =
+  "Die Lieferung Transportbeton C25/30 (10 t) für die Kellerwände Abschnitt B verspätet sich um ca. 2 Stunden. Ursache laut Lieferant: Stau auf der Zufahrt Nord. Die Betonpumpe wurde umdisponiert, der Tiefbau ist informiert. Folge: Betonage Abschnitt B endet erst gegen 15:30, die Kolonne arbeitet bis dahin an der Schalung Abschnitt C weiter. Kein Verzug am kritischen Pfad, sofern die Lieferung bis 12:00 eintrifft.";
+
+const DATEI_VORSCHAU: Record<string, string> = {
+  "Lieferschein_Beton.pdf":
+    "Lieferschein Nr. 2026-11-4471\nIsar Transportbeton GmbH\n\nBaustelle: Wohnanlage Lindenhof, Haus B\nSorte: C25/30 XC2 F3 16 mm\nMenge: 10,0 m³\nAbfahrt Werk: 09:05\nAnkunft Baustelle: 11:38 (geplant 09:40)\n\nUnterschrift Polier: ________",
+  "Foto_Lieferverzug.jpg":
+    "Foto · 21.11.2026, 09:52\nFahrmischer im Stau an der Zufahrt Nord, Baustelleneinfahrt durch Sperrung blockiert.",
+  "Fahrmischer im Stau, Zufahrt Nord": "Foto · 21.11.2026, 09:52\nAufgenommen vom Polier an der Zufahrt Nord.",
+  "Schalung Kellerwand B, betonierbereit":
+    "Foto · 21.11.2026, 08:30\nSchalung Kellerwand Abschnitt B abgenommen, Bewehrung geprüft.",
+  "Preisliste Beton C25-30.pdf":
+    "Preisliste 2026 · Isar Transportbeton GmbH\n\nC25/30 XC2 F3 16 mm: 128,00 €/m³\nC30/37 XC4 F3 16 mm: 139,50 €/m³\nZuschlag Winterbeton (< 5 °C): 6,50 €/m³\nWartezeit Fahrmischer ab 30 min: 1,80 €/min\n\nAlle Preise netto, frei Baustelle München.",
+  "Versicherungsnachweis 2026.pdf":
+    "Versicherungsbestätigung Betriebshaftpflicht\n\nVersicherungsnehmer: Kessler Rohbau GmbH & Co. KG\nDeckungssumme Personen- und Sachschäden: 5.000.000 €\nGültig: 01.01.2026 – 31.12.2026",
+};
+
+const DOKUMENT_ENTWUERFE: Record<string, string> = {
+  Behinderungsanzeige:
+    "Behinderungsanzeige nach § 6 Abs. 1 VOB/B\n\nBauvorhaben: Wohnanlage Lindenhof, Haus B\nAn: Lindenhof Wohnbau GmbH, Bauherr\n\nSehr geehrte Damen und Herren,\n\nhiermit zeigen wir an, dass wir am 21.11.2026 bei der Ausführung der Kellerwände Abschnitt B behindert sind. Die Baustellenzufahrt Nord war ab 09:30 durch eine Sperrung blockiert; die Betonlieferung konnte erst um 11:38 einfahren.\n\nAuswirkungen: Verschiebung der Betonage um ca. 2 Stunden. Über weitere Auswirkungen auf die Ausführungsfristen informieren wir umgehend.\n\nMit freundlichen Grüßen\nBauleitung",
+  Tagesbericht:
+    "Bautagesbericht Nr. 088 · 21.11.2026\nWohnanlage Lindenhof, Haus B\n\nWetter: trocken, 4–6 °C\nPersonal: 14 (Rohbau 9, Tiefbau 3, Bauleitung 2)\n\nLeistungen:\n– Betonage Kellerwände Abschnitt B (verschoben auf 11:45–15:30)\n– Schalung Abschnitt C begonnen\n\nBesondere Vorkommnisse:\n– 08:15 Ausfall Betonpumpe, Ersatz ab 10:30\n– Transportbeton ca. 2 h verspätet (Stau Zufahrt Nord)",
+  Bedenkenanzeige:
+    "Bedenkenanzeige nach § 4 Abs. 3 VOB/B\n\nBauvorhaben: Wohnanlage Lindenhof, Haus B\nAn: Lindenhof Wohnbau GmbH, Bauherr\n\nGegen die vorgesehene Ausführung der Abdichtung der Kellerwände als Bitumendickbeschichtung melden wir Bedenken an. Der am 18.11.2026 gemessene Grundwasserstand liegt 1,20 m über dem Bemessungswasserstand des Gutachtens.\n\nWir empfehlen die Ausführung als WU-Betonkonstruktion und bitten um Entscheidung bis 27.11.2026.\n\nMit freundlichen Grüßen\nBauleitung",
+  Meetingprotokoll:
+    "Kurzbesprechung 21.11.2026, 10:15, Baucontainer\nTeilnehmer: Bauleitung, Polier, Isar Transportbeton (telefonisch)\n\n1. Lieferverzug Beton: neue Ankunft ca. 11:40 bestätigt.\n2. Kolonne zieht Schalung Abschnitt C vor.\n3. Betonage B bis 15:30, Nachbehandlung wegen Frostgefahr mit Abdeckung.\n\nNächste Abstimmung: Mo 07:00",
+};
 
 const TRANSKRIPT_MOCK =
   "Der Betonlieferant hat gerade angerufen. Die Lieferung von 10 t verspätet sich um etwa zwei Stunden.\n\nGrund laut Lieferant: Verkehrsbehinderung auf der Zufahrt zur Baustelle.\n\nIch habe die Betonpumpe in Abschnitt B vorsorglich umdisponiert und den Subunternehmer Tiefbau informiert.";
@@ -139,6 +190,8 @@ type Tab = {
   title: string;
   typ: "datei" | "transkript" | "dokument";
   dokumentTyp?: string;
+  /** Editable text of a document draft. */
+  inhalt?: string;
 };
 
 type BetroffenerVertrag = {
@@ -149,7 +202,7 @@ type BetroffenerVertrag = {
 const dateiTab = (name: string): Tab => ({ id: `datei:${name}`, title: name, typ: "datei" });
 
 export function CockpitMeldungWorkflow() {
-  const [zusammenfassung, setZusammenfassung] = useState(ZUSAMMENFASSUNG_PLATZHALTER);
+  const [zusammenfassung, setZusammenfassung] = useState(ZUSAMMENFASSUNG_MOCK);
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [aktiverTab, setAktiverTab] = useState("");
   const [betroffeneVertraege, setBetroffeneVertraege] = useState<BetroffenerVertrag[]>([]);
@@ -174,8 +227,15 @@ export function CockpitMeldungWorkflow() {
 
   const setzeDokumentTyp = (id: string, dokumentTyp: string) =>
     setTabs((current) =>
-      current.map((tab) => (tab.id === id ? { ...tab, dokumentTyp, title: dokumentTyp } : tab)),
+      current.map((tab) =>
+        tab.id === id
+          ? { ...tab, dokumentTyp, title: dokumentTyp, inhalt: DOKUMENT_ENTWUERFE[dokumentTyp] ?? "" }
+          : tab,
+      ),
     );
+
+  const setzeInhalt = (id: string, inhalt: string) =>
+    setTabs((current) => current.map((tab) => (tab.id === id ? { ...tab, inhalt } : tab)));
 
   const toggleVertrag = (vertrag: string, unternehmer: string) =>
     setBetroffeneVertraege((current) =>
@@ -391,6 +451,7 @@ export function CockpitMeldungWorkflow() {
                   <TabInhalt
                     tab={tab}
                     onWaehleDokumentTyp={(typ) => setzeDokumentTyp(tab.id, typ)}
+                    onAendereInhalt={(inhalt) => setzeInhalt(tab.id, inhalt)}
                     onAbbrechen={() => schliesseTab(tab.id)}
                   />
                 </TabsContent>
@@ -662,10 +723,12 @@ function SubunternehmerEintrag({
 function TabInhalt({
   tab,
   onWaehleDokumentTyp,
+  onAendereInhalt,
   onAbbrechen,
 }: {
   tab: Tab;
   onWaehleDokumentTyp: (typ: string) => void;
+  onAendereInhalt: (inhalt: string) => void;
   onAbbrechen: () => void;
 }) {
   if (tab.typ === "transkript") {
@@ -678,17 +741,25 @@ function TabInhalt({
 
   if (tab.typ === "dokument") {
     return tab.dokumentTyp ? (
-      <div className="flex min-h-0 flex-1 items-center justify-center rounded-md border bg-muted text-xs text-muted-foreground">
-        {tab.dokumentTyp}: Inhalt wird später befüllt
-      </div>
+      <Textarea
+        aria-label={`${tab.dokumentTyp} bearbeiten`}
+        value={tab.inhalt ?? ""}
+        onChange={(event) => onAendereInhalt(event.target.value)}
+        className="min-h-0 flex-1 resize-none text-xs field-sizing-fixed"
+      />
     ) : (
       <DokumentTypAuswahl onWaehle={onWaehleDokumentTyp} onAbbrechen={onAbbrechen} />
     );
   }
 
-  return (
+  const vorschau = DATEI_VORSCHAU[tab.title] ?? VERTRAGS_VORSCHAU[tab.title];
+  return vorschau ? (
+    <div className="min-h-0 flex-1 overflow-auto rounded-md border bg-muted p-3 text-xs whitespace-pre-line">
+      {vorschau}
+    </div>
+  ) : (
     <div className="flex min-h-0 flex-1 items-center justify-center rounded-md border bg-muted text-xs text-muted-foreground">
-      Dateiansicht folgt
+      {tab.title} · Vorschau nicht verfügbar
     </div>
   );
 }

@@ -5,26 +5,35 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const TAGESBERICHT = {
-  datum: "20.11.26",
-  projekt: "Bauprojekt XYZ",
-  text: "Beton-Lieferung nach Plan, Verzögerungen aufgrund des Wetters…",
+  datum: "21.11.26",
+  projekt: "Wohnanlage Lindenhof – Haus B",
+  text: "Betonage Kellerwände Abschnitt B: Betonpumpe um 08:15 ausgefallen, Ersatzpumpe ab 10:30 im Einsatz. Transportbeton (10 t) ca. 2 h verspätet wegen Stau an der Zufahrt. 14 Arbeitskräfte vor Ort, trocken, 6 °C.",
 };
 
 const VORFAELLE_MOCK = [
-  { id: "vorfall-1", titel: "Vorfall 1: Gerät defekt" },
-  { id: "vorfall-2", titel: "Vorfall 2: Materialmangel" },
+  { id: "vorfall-1", titel: "Betonpumpe Abschnitt B ausgefallen" },
+  { id: "vorfall-2", titel: "Transportbeton 2 h verspätet" },
+  { id: "vorfall-3", titel: "Bewehrungspläne Abschnitt C fehlen" },
 ];
 
-const MELDUNGSDATUM = "19.11.26";
+const MELDUNGSDATUM = "21.11.26";
 
 const RISIKEN_MOCK = [
-  { id: "risiko-1", titel: "Risiko: Wetterverzögerung Betonarbeiten" },
-  { id: "risiko-2", titel: "Risiko: Lieferengpass Bewehrungsstahl" },
+  { id: "risiko-1", titel: "Betonage Bodenplatte C gefährdet (+2 AT)" },
+  { id: "risiko-2", titel: "Frost ab 29.11.: Winterbaumaßnahmen nötig" },
+  { id: "risiko-3", titel: "Bewehrungsstahl knapp bis KW 49" },
 ];
 
 const VORFALL_MELDUNGEN_MOCK = [
-  { id: "meldung-1", titel: "Meldung: Gerät defekt" },
-  { id: "meldung-2", titel: "Meldung: Baumaterial defekt" },
+  { id: "meldung-1", titel: "Behinderungsanzeige: Bewehrungspläne Abschnitt C" },
+  { id: "meldung-2", titel: "Bedenkenanzeige: Abdichtung Kellerwände" },
+];
+
+const LIEFERUNGEN_MOCK = [
+  { id: "lieferung-1", titel: "Transportbeton C25/30, 10 t", status: "verspätet, ca. 11:40" },
+  { id: "lieferung-2", titel: "Schalungselemente Kellerwand", status: "geliefert 07:30" },
+  { id: "lieferung-3", titel: "Kies 0/32, 18 t", status: "geliefert 08:05" },
+  { id: "lieferung-4", titel: "Bewehrungsstahl BSt 500, 4,2 t", status: "erwartet Mo 07:00" },
 ];
 
 const MELDUNG_WORKFLOW_PFAD = "/cockpit/meldung";
@@ -139,7 +148,13 @@ export function Cockpit() {
             <CardHeader>
               <CardTitle>Lieferketten</CardTitle>
             </CardHeader>
-            <CardContent className="flex-1" />
+            <CardContent className="flex flex-col gap-2">
+              {LIEFERUNGEN_MOCK.map(({ id, titel, status }) => (
+                <Eintrag key={id} titel={titel}>
+                  <span className="shrink-0 text-xs text-muted-foreground">{status}</span>
+                </Eintrag>
+              ))}
+            </CardContent>
           </Card>
         </section>
       </main>
