@@ -140,7 +140,6 @@ const BAUPLAENE_MOCK = [
 
 /** Round, tinted icon buttons: green confirms, red removes. */
 const ICON_GRUEN = "bg-green-100 text-green-700 hover:bg-green-200 hover:text-green-800";
-const ICON_GRUEN_AKTIV = "bg-green-600 text-white hover:bg-green-700 hover:text-white";
 const ICON_ROT = "bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700";
 
 function ListenEintrag({ titel, status }: { titel: string; status: string }) {
@@ -245,43 +244,41 @@ function MeldungsListe({
   );
 }
 
-type Aufgabe = { id: string; titel: string; erledigt: boolean };
+type Aufgabe = { id: string; titel: string };
 
+/** Green (erledigt) and red (verwerfen) both take the task off the list. */
 function AufgabenListe({
   aufgaben,
-  onErledigen,
-  onLoeschen,
+  onEntfernen,
 }: {
   aufgaben: Aufgabe[];
-  onErledigen: (id: string) => void;
-  onLoeschen: (id: string) => void;
+  onEntfernen: (id: string) => void;
 }) {
+  if (aufgaben.length === 0) {
+    return <p className="text-sm text-muted-foreground">Keine offenen Aufgaben.</p>;
+  }
+
   return (
     <div className="flex flex-col gap-2">
-      {aufgaben.map(({ id, titel, erledigt }) => (
+      {aufgaben.map(({ id, titel }) => (
         <div key={id} className="flex items-center justify-between gap-2 rounded-xl bg-background p-2.5">
-          <span
-            className={`min-w-0 flex-1 text-sm hyphens-auto ${erledigt ? "text-muted-foreground line-through" : ""}`}
-          >
-            {titel}
-          </span>
+          <span className="min-w-0 flex-1 text-sm hyphens-auto">{titel}</span>
           <div className="flex shrink-0 gap-1.5">
             <Button
               variant="ghost"
               size="icon"
-              aria-label={erledigt ? "Aufgabe wieder öffnen" : "Aufgabe erledigen"}
-              aria-pressed={erledigt}
-              className={erledigt ? ICON_GRUEN_AKTIV : ICON_GRUEN}
-              onClick={() => onErledigen(id)}
+              aria-label="Aufgabe erledigt"
+              className={ICON_GRUEN}
+              onClick={() => onEntfernen(id)}
             >
               <CheckIcon />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              aria-label="Aufgabe löschen"
+              aria-label="Aufgabe verwerfen"
               className={ICON_ROT}
-              onClick={() => onLoeschen(id)}
+              onClick={() => onEntfernen(id)}
             >
               <Trash2Icon />
             </Button>
@@ -337,7 +334,7 @@ export function Cockpit() {
   const [abgeschlossen, setAbgeschlossen] = useState<Meldung[]>(MELDUNGEN_ABGESCHLOSSEN_MOCK);
   const [termine, setTermine] = useState(TERMINE_MOCK);
   const [aufgaben, setAufgaben] = useState<Aufgabe[]>(() =>
-    AUFGABEN_MOCK.map((aufgabe) => ({ ...aufgabe, erledigt: false })),
+    AUFGABEN_MOCK,
   );
   const [planTab, setPlanTab] = useState("aufgaben");
   const [neuerEintragOffen, setNeuerEintragOffen] = useState(false);
@@ -362,7 +359,7 @@ export function Cockpit() {
   const eintragHinzufuegen = (titel: string) => {
     const id = crypto.randomUUID();
     if (planTab === "termine") setTermine((aktuell) => [...aktuell, { id, titel }]);
-    else setAufgaben((aktuell) => [...aktuell, { id, titel, erledigt: false }]);
+    else setAufgaben((aktuell) => [...aktuell, { id, titel }]);
     setNeuerEintragOffen(false);
   };
 
@@ -379,9 +376,9 @@ export function Cockpit() {
 
   return (
     <div className="flex h-screen min-w-5xl flex-col overflow-hidden bg-background text-foreground">
-      <header className="flex h-12 items-center justify-between gap-4 border-b bg-card px-6">
+      <header className="flex h-16 items-center justify-between gap-4 border-b bg-card px-6">
         <div className="flex items-baseline gap-3">
-          <h1 className="text-base font-semibold text-primary">Cockpit</h1>
+          <h1 className="text-2xl font-semibold text-primary">Cockpit</h1>
           <span className="text-xs text-muted-foreground">
             {TAGESBERICHT.projekt} · {MELDUNGSDATUM}
           </span>
@@ -490,7 +487,7 @@ export function Cockpit() {
                     <PlusIcon />
                   </Button>
                 </CardHeader>
-                <CardContent className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
+                <CardContent className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-2">
                   {neuerEintragOffen && (
                     <NeuerEintrag
                       platzhalter={planTab === "termine" ? "Neuer Termin" : "Neue Aufgabe"}
@@ -508,14 +505,7 @@ export function Cockpit() {
                   <TabsContent value="aufgaben">
                     <AufgabenListe
                       aufgaben={aufgaben}
-                      onErledigen={(id) =>
-                        setAufgaben((aktuell) =>
-                          aktuell.map((aufgabe) =>
-                            aufgabe.id === id ? { ...aufgabe, erledigt: !aufgabe.erledigt } : aufgabe,
-                          ),
-                        )
-                      }
-                      onLoeschen={(id) =>
+                      onEntfernen={(id) =>
                         setAufgaben((aktuell) => aktuell.filter((aufgabe) => aufgabe.id !== id))
                       }
                     />
@@ -572,15 +562,15 @@ export function Cockpit() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="flex min-h-0 flex-1 flex-col gap-3 rounded-md border p-3">
-                      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
+                      <div className="flex min-h-0 flex-1 flex-col gap-2">
+                      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-3">
                         {lieferanten.map(({ id, titel, beschreibung }) => (
                           <button
                             key={id}
                             type="button"
                             onClick={() => setAusgewaehlterLieferantId(id)}
-                            className={`flex h-16 shrink-0 items-start justify-between gap-2 rounded-xl bg-background p-3.5 text-left ${
-                              ausgewaehlterLieferantId === id ? "ring-2 ring-primary" : ""
+                            className={`flex h-14 shrink-0 items-start justify-between gap-2 rounded-lg bg-background px-3 py-2 text-left ${
+                              ausgewaehlterLieferantId === id ? "ring-2 ring-inset ring-primary" : ""
                             }`}
                           >
                             <div className="flex flex-col">
@@ -591,8 +581,8 @@ export function Cockpit() {
                                 </span>
                               )}
                             </div>
-                            <div className="flex size-10 shrink-0 items-center justify-center rounded-md border">
-                              <FileTextIcon className="size-6 text-muted-foreground" />
+                            <div className="flex size-8 shrink-0 items-center justify-center rounded-md border">
+                              <FileTextIcon className="size-5 text-muted-foreground" />
                             </div>
                           </button>
                         ))}
@@ -617,7 +607,7 @@ export function Cockpit() {
                       </div>
                       </div>
                     </div>
-                    <div className="flex min-h-0 flex-col gap-2 overflow-y-auto rounded-xl bg-background p-3.5">
+                    <div className="flex min-h-0 flex-col gap-2 overflow-y-auto rounded-xl bg-background p-3">
                       <span className="text-sm">Vorschau</span>
                       {ausgewaehlterLieferant && (
                         <>
