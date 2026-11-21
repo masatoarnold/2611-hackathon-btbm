@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import {
   ArrowLeftIcon,
   CameraIcon,
@@ -161,7 +161,7 @@ export function Satellite() {
           <TabsTrigger value="schedule">Tagesplan</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="reports" className="flex flex-col">
+        <TabsContent value="reports" className="flex flex-1 flex-col">
           {view.name === "list" && (
             <ReportList
               reports={reports}
@@ -239,11 +239,27 @@ function ReportList({
       {reports.length === 0 && (
         <p className="text-sm text-muted-foreground">Noch keine Aufzeichnungen.</p>
       )}
-      <div className="mt-auto flex justify-center pt-4">
+      <StickyActionBar className="justify-center">
         <Button size="icon-lg" className="size-20 rounded-full" onClick={onCreate}>
           <PlusIcon className="size-10" />
         </Button>
-      </div>
+      </StickyActionBar>
+    </div>
+  );
+}
+
+function StickyActionBar({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`sticky bottom-0 mt-auto -mx-4 -mb-4 flex items-center justify-between gap-2 border-t bg-background p-4 ${className}`}
+    >
+      {children}
     </div>
   );
 }
@@ -353,7 +369,7 @@ function NewReport({
     });
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-1 flex-col gap-6">
       <Card>
         <CardContent className="flex flex-col items-center gap-4">
           <Button
@@ -448,14 +464,14 @@ function NewReport({
 
       <PhotoAttachments photos={attachments} onChange={setAttachments} />
 
-      <div className="flex items-center justify-end gap-2">
+      <StickyActionBar className="justify-end">
         <Button variant="ghost" size="lg" onClick={onCancel}>
           Abbrechen
         </Button>
         <Button size="lg" disabled={isBusy} onClick={finish}>
           Weiter
         </Button>
-      </div>
+      </StickyActionBar>
     </div>
   );
 }
@@ -485,7 +501,7 @@ function PhotoAttachments({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <span className="flex-1 text-sm text-muted-foreground">
+        <span className="min-w-0 flex-1 pl-4 text-sm break-words text-muted-foreground">
           {photos.length} Fotos angehängt
         </span>
         <input
@@ -507,7 +523,7 @@ function PhotoAttachments({
         <Button
           size="icon-lg"
           variant="outline"
-          className="size-14 rounded-full"
+          className="size-14 shrink-0 rounded-full"
           aria-label="Foto aufnehmen"
           onClick={() => cameraInputRef.current?.click()}
         >
@@ -516,7 +532,7 @@ function PhotoAttachments({
         <Button
           size="icon-lg"
           variant="outline"
-          className="size-14 rounded-full"
+          className="size-14 shrink-0 rounded-full"
           aria-label="Foto hinzufügen"
           onClick={() => galleryInputRef.current?.click()}
         >
@@ -574,89 +590,94 @@ function ReportDetail({
   if (!report) return null;
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-2">
-        <Button variant="ghost" className="size-14" aria-label="Zurück" onClick={onBack}>
-          <ArrowLeftIcon className="size-7" />
-        </Button>
-        <CardTitle className="flex-1">{report.title}</CardTitle>
-        <PrioritySelect value={report.priority} onChange={onChangePriority} />
-      </CardHeader>
-      <CardContent className="flex flex-col gap-6">
-        <Textarea
-          className="min-h-40"
-          value={report.content}
-          onChange={(event) => onChange(event.target.value)}
-        />
-        {showTranscript && (
-          <p className="rounded-md bg-muted p-2 text-sm text-muted-foreground">
-            {report.transcript}
-          </p>
-        )}
-        <div className="flex flex-col gap-6 rounded-md border p-4 text-base">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-muted-foreground">Zeitstempel</span>
-            <span className="tabular-nums">
-              {report.timestamp.toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}
-            </span>
-          </div>
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-muted-foreground">Vorgangstyp</span>
-            <Select
-              value={report.vorgangstyp ?? NO_VORGANGSTYP_VALUE}
-              onValueChange={(next) =>
-                onChangeVorgangstyp(next === NO_VORGANGSTYP_VALUE ? null : next)
-              }
-            >
-              <SelectTrigger aria-label="Vorgangstyp auswählen" className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent position="popper">
-                <SelectItem value={NO_VORGANGSTYP_VALUE} className="min-h-12 text-base">
-                  Keine Auswahl
-                </SelectItem>
-                {VORGANGSTYPEN.map((name) => (
-                  <SelectItem key={name} value={name} className="min-h-12 text-base">
-                    {name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-muted-foreground">Ort</span>
-            <Input
-              aria-label="Ort"
-              placeholder="Ort eingeben"
-              className="w-48"
-              value={report.location}
-              onChange={(event) => onChangeLocation(event.target.value)}
-            />
-          </div>
-        </div>
-        <PhotoAttachments photos={report.attachments} onChange={onChangeAttachments} />
-        <div className="flex items-center justify-between gap-2">
-          <Button
-            variant={showTranscript ? "default" : "outline"}
-            className="size-14"
-            aria-label="Transkript"
-            onClick={() => setShowTranscript((current) => !current)}
-          >
-            <FileTextIcon className="size-7" />
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
+          <Button variant="ghost" className="size-14" aria-label="Zurück" onClick={onBack}>
+            <ArrowLeftIcon className="size-7" />
           </Button>
-          <div className="flex gap-2">
-            <Button variant="destructive" onClick={onDelete}>
-              <Trash2Icon />
-              Löschen
-            </Button>
-            <Button onClick={onConfirm}>
-              <CheckIcon />
-              Bestätigen
-            </Button>
+          <CardTitle className="flex-1">{report.title}</CardTitle>
+          <PrioritySelect value={report.priority} onChange={onChangePriority} />
+        </CardHeader>
+        <CardContent className="flex flex-col gap-6">
+          <Textarea
+            className="min-h-40"
+            value={report.content}
+            onChange={(event) => onChange(event.target.value)}
+          />
+          {showTranscript && (
+            <p className="rounded-md bg-muted p-2 text-sm text-muted-foreground">
+              {report.transcript}
+            </p>
+          )}
+          <div className="flex flex-col gap-6 rounded-md border p-4 text-base">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-muted-foreground">Zeitstempel</span>
+              <span className="tabular-nums">
+                {report.timestamp.toLocaleString("de-DE", {
+                  dateStyle: "short",
+                  timeStyle: "short",
+                })}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-muted-foreground">Vorgangstyp</span>
+              <Select
+                value={report.vorgangstyp ?? NO_VORGANGSTYP_VALUE}
+                onValueChange={(next) =>
+                  onChangeVorgangstyp(next === NO_VORGANGSTYP_VALUE ? null : next)
+                }
+              >
+                <SelectTrigger aria-label="Vorgangstyp auswählen" className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectItem value={NO_VORGANGSTYP_VALUE} className="min-h-12 text-base">
+                    Keine Auswahl
+                  </SelectItem>
+                  {VORGANGSTYPEN.map((name) => (
+                    <SelectItem key={name} value={name} className="min-h-12 text-base">
+                      {name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-muted-foreground">Ort</span>
+              <Input
+                aria-label="Ort"
+                placeholder="Ort eingeben"
+                className="w-48"
+                value={report.location}
+                onChange={(event) => onChangeLocation(event.target.value)}
+              />
+            </div>
           </div>
+          <PhotoAttachments photos={report.attachments} onChange={onChangeAttachments} />
+        </CardContent>
+      </Card>
+      <StickyActionBar>
+        <Button
+          variant={showTranscript ? "default" : "outline"}
+          className="size-14"
+          aria-label="Transkript"
+          onClick={() => setShowTranscript((current) => !current)}
+        >
+          <FileTextIcon className="size-7" />
+        </Button>
+        <div className="flex gap-2">
+          <Button variant="destructive" onClick={onDelete}>
+            <Trash2Icon />
+            Löschen
+          </Button>
+          <Button onClick={onConfirm}>
+            <CheckIcon />
+            Bestätigen
+          </Button>
         </div>
-      </CardContent>
-    </Card>
+      </StickyActionBar>
+    </>
   );
 }
 
@@ -729,12 +750,13 @@ function TodoList() {
                 {todo.title}
               </label>
               <Button
-                size="icon"
+                size="icon-lg"
                 variant="ghost"
+                className="size-12 shrink-0"
                 aria-label={`${todo.title} löschen`}
                 onClick={() => deleteTodo(todo.id)}
               >
-                <Trash2Icon />
+                <Trash2Icon className="size-6" />
               </Button>
             </li>
           ))}
@@ -757,11 +779,12 @@ function TodoList() {
           />
           <Button
             type="submit"
-            size="icon"
+            size="icon-lg"
+            className="size-12 shrink-0"
             aria-label="Aufgabe hinzufügen"
             disabled={!newTitle.trim()}
           >
-            <PlusIcon />
+            <PlusIcon className="size-6" />
           </Button>
         </form>
       </CardContent>
