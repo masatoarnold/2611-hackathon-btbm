@@ -36,6 +36,7 @@ import {
   AttachmentTitle,
   AttachmentTrigger,
 } from "@/components/ui/attachment";
+import { CockpitHeader } from "@/components/CockpitHeader";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -372,7 +373,9 @@ export function CockpitMeldungWorkflow() {
   };
 
   return (
-    <div className="grid h-screen grid-cols-[5fr_5fr_3fr] gap-4 bg-background p-4 text-foreground">
+    <div className="flex h-screen flex-col bg-background text-foreground">
+      <CockpitHeader projekt="Wohnanlage Lindenhof – Haus B" datum="21.11.26" />
+      <div className="grid min-h-0 flex-1 grid-cols-[5fr_5fr_3fr] gap-4 p-4">
       {/* Linke Spalte: Incident und Subunternehmer */}
       <div className="grid min-h-0 grid-rows-[3fr_2fr] gap-4">
         <Card className="min-h-0">
@@ -729,6 +732,7 @@ export function CockpitMeldungWorkflow() {
         dokumentText={mailText}
         zusammenfassung={zusammenfassung}
       />
+      </div>
     </div>
   );
 }

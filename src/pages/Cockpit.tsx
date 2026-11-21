@@ -10,6 +10,7 @@ import {
   XIcon,
 } from "lucide-react";
 
+import { CockpitHeader } from "@/components/CockpitHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -376,17 +377,7 @@ export function Cockpit() {
 
   return (
     <div className="flex h-screen min-w-5xl flex-col overflow-hidden bg-background text-foreground">
-      <header className="flex h-16 items-center justify-between gap-4 border-b bg-card px-6">
-        <div className="flex items-baseline gap-3">
-          <h1 className="text-2xl font-semibold text-primary">Cockpit</h1>
-          <span className="text-xs text-muted-foreground">
-            {TAGESBERICHT.projekt} · {MELDUNGSDATUM}
-          </span>
-        </div>
-        <Button variant="outline" size="sm" asChild>
-          <a href="/satellite">Baustellen-App öffnen</a>
-        </Button>
-      </header>
+      <CockpitHeader projekt={TAGESBERICHT.projekt} datum={MELDUNGSDATUM} />
 
       <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-4 p-6">
         <Card className="min-h-0 overflow-hidden">

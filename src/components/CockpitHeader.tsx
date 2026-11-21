@@ -1,0 +1,20 @@
+import { Button } from "@/components/ui/button";
+
+/** Title bar shared by all Cockpit pages: title, project and a link to the site app. */
+export function CockpitHeader({ projekt, datum }: { projekt: string; datum: string }) {
+  return (
+    <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-card px-6">
+      <div className="flex items-baseline gap-3">
+        <h1 className="text-2xl font-semibold text-primary">
+          <a href="/cockpit">Cockpit</a>
+        </h1>
+        <span className="text-xs text-muted-foreground">
+          {projekt} · {datum}
+        </span>
+      </div>
+      <Button variant="outline" size="sm" asChild>
+        <a href="/satellite">Baustellen-App öffnen</a>
+      </Button>
+    </header>
+  );
+}
