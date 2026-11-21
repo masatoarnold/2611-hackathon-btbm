@@ -1,29 +1,37 @@
-# bun-react-tailwind-shadcn-template
+A project that helps constructions site managers monitor construction sites.
 
-To install dependencies:
+UI built on shadcn components.
 
-```bash
+Will be split into a desktop-view (a "cockpit" of sorts, that can monitor everything) and a "satellite" mobile view that is used on-site.
+
+---
+
+Features of the cockpit:
+
+- To be determined
+
+Features of the satellite
+
+- To be determined
+
+---
+
+## How to run development environment:
+
+Install dependencies
+
+```sh
 bun install
 ```
 
-To start a development server:
+Run web app
 
-```bash
-bun dev
+```sh
+bun run dev
 ```
 
-To run for production:
+Run formatter
 
-```bash
-bun start
+```sh
+bun run fmt
 ```
-
-To type check:
-
-```bash
-bun check
-```
-
-Run `bun fmt` to format the code.
-
-This project was created using `bun init` in bun v1.4.4. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
