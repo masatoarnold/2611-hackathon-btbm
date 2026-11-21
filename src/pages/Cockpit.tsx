@@ -27,10 +27,26 @@ const VORFALL_MELDUNGEN_MOCK = [
   { id: "meldung-2", titel: "Meldung: Baumaterial defekt" },
 ];
 
-function Eintrag({ titel, children }: { titel: string; children?: React.ReactNode }) {
+const MELDUNG_WORKFLOW_PFAD = "/cockpit/meldung";
+
+function Eintrag({
+  titel,
+  href,
+  children,
+}: {
+  titel: string;
+  href?: string;
+  children?: React.ReactNode;
+}) {
   return (
     <div className="flex items-center justify-between gap-2 rounded-md border p-3">
-      <span className="text-sm">{titel}</span>
+      {href ? (
+        <a href={href} className="text-sm hover:underline">
+          {titel}
+        </a>
+      ) : (
+        <span className="text-sm">{titel}</span>
+      )}
       {children}
     </div>
   );
@@ -79,10 +95,12 @@ export function Cockpit() {
                 Vorfall erstellen
               </Button>
               {VORFAELLE_MOCK.map(({ id, titel }) => (
-                <Eintrag key={id} titel={titel}>
+                <Eintrag key={id} titel={titel} href={MELDUNG_WORKFLOW_PFAD}>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" aria-label="Vorfall bearbeiten">
-                      <PencilIcon />
+                    <Button variant="ghost" size="icon" aria-label="Vorfall bearbeiten" asChild>
+                      <a href={MELDUNG_WORKFLOW_PFAD}>
+                        <PencilIcon />
+                      </a>
                     </Button>
                     <Button variant="ghost" size="icon" aria-label="Vorfall melden">
                       <MailIcon />
