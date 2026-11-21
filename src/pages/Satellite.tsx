@@ -1,20 +1,29 @@
-import { useState } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 import {
+  ArrowLeftIcon,
+  CameraIcon,
   CheckIcon,
+  ChevronDownIcon,
   FileTextIcon,
   FlagIcon,
-  ImageIcon,
   MicIcon,
   PlusIcon,
   SquareIcon,
   Trash2Icon,
+  XIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Item, ItemActions, ItemContent, ItemDescription, ItemTitle } from "@/components/ui/item";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -24,14 +33,19 @@ type Report = {
   content: string;
   transcript: string;
   priority: number;
+  timestamp: Date;
+  location: string;
+  vorgangstyp: string | null;
+  attachments: string[];
 };
 
-type View = { name: "list" } | { name: "new" } | { name: "detail"; id: number };
+type View = { name: "list" } | { name: "new"; id?: number } | { name: "detail"; id: number };
 
-const TEMPLATES = ["Meldung", "Besprechungsprotokoll"];
+const VORGANGSTYPEN = ["Meldung", "Besprechungsprotokoll"];
+const NO_VORGANGSTYP_VALUE = "keine-auswahl";
 
 const PRIORITIES = [1, 2, 3, 4, 5];
-const DEFAULT_PRIORITY = 3;
+const DEFAULT_PRIORITY = 1;
 const PRIORITY_COLORS: Record<number, string> = {
   1: "var(--foreground)",
   2: "#3b82f6",
@@ -47,6 +61,10 @@ const INITIAL_REPORTS: Report[] = [
     content: "Betonpumpe an Abschnitt B ausgefallen. Ersatz wurde angefragt.",
     transcript: "Hier ist die Betonpumpe an Abschnitt B ausgefallen, wir brauchen Ersatz...",
     priority: 4,
+    timestamp: new Date(2026, 10, 21, 8, 15),
+    location: "Abschnitt B",
+    vorgangstyp: "Meldung",
+    attachments: [],
   },
   {
     id: 2,
@@ -54,6 +72,10 @@ const INITIAL_REPORTS: Report[] = [
     content: "Betonlieferung 10t verspätet sich um 2 Stunden.",
     transcript: "Der Betonlieferant hat gerade angerufen, es dauert zwei Stunden länger...",
     priority: 2,
+    timestamp: new Date(2026, 10, 21, 9, 40),
+    location: "Baustelleneinfahrt",
+    vorgangstyp: null,
+    attachments: [],
   },
 ];
 
@@ -86,9 +108,9 @@ export function Satellite() {
   const [view, setView] = useState<View>({ name: "list" });
 
   const addReport = (report: Report) => setReports((current) => [report, ...current]);
-  const updateReport = (id: number, content: string) =>
+  const updateReport = (id: number, changes: Partial<Omit<Report, "id">>) =>
     setReports((current) =>
-      current.map((report) => (report.id === id ? { ...report, content } : report)),
+      current.map((report) => (report.id === id ? { ...report, ...changes } : report)),
     );
   const deleteReport = (id: number) =>
     setReports((current) => current.filter((report) => report.id !== id));
@@ -116,8 +138,10 @@ export function Satellite() {
           )}
           {view.name === "new" && (
             <NewReport
+              initialReport={reports.find((report) => report.id === view.id)}
               onFinish={(report) => {
-                addReport(report);
+                if (view.id === undefined) addReport(report);
+                else updateReport(report.id, report);
                 setView({ name: "detail", id: report.id });
               }}
               onCancel={() => setView({ name: "list" })}
@@ -126,7 +150,11 @@ export function Satellite() {
           {view.name === "detail" && (
             <ReportDetail
               report={reports.find((report) => report.id === view.id)}
-              onChange={(content) => updateReport(view.id, content)}
+              onBack={() => setView({ name: "new", id: view.id })}
+              onChange={(content) => updateReport(view.id, { content })}
+              onChangeLocation={(location) => updateReport(view.id, { location })}
+              onChangeVorgangstyp={(vorgangstyp) => updateReport(view.id, { vorgangstyp })}
+              onChangeAttachments={(attachments) => updateReport(view.id, { attachments })}
               onChangePriority={(priority) => changePriority(view.id, priority)}
               onDelete={() => {
                 deleteReport(view.id);
@@ -222,41 +250,44 @@ function PrioritySelect({
 }
 
 function NewReport({
+  initialReport,
   onFinish,
   onCancel,
 }: {
+  initialReport?: Report;
   onFinish: (report: Report) => void;
   onCancel: () => void;
 }) {
-  const [template, setTemplate] = useState(TEMPLATES[0]);
+  const [vorgangstyp, setVorgangstyp] = useState<string | null>(initialReport?.vorgangstyp ?? null);
   const [isRecording, setIsRecording] = useState(false);
-  const [text, setText] = useState("");
-  const [attachmentCount, setAttachmentCount] = useState(0);
+  const [text] = useState("");
+  const [manualText, setManualText] = useState("");
+  const [showMetadata, setShowMetadata] = useState(false);
+  const [timestamp] = useState(() => initialReport?.timestamp ?? new Date());
+  const [location, setLocation] = useState(initialReport?.location ?? "");
+  const [priority, setPriority] = useState(initialReport?.priority ?? DEFAULT_PRIORITY);
+  const [attachments, setAttachments] = useState<string[]>(initialReport?.attachments ?? []);
 
   const finish = () =>
     onFinish({
-      id: Date.now(),
-      title: `${template}: Lieferverspätung`,
-      content: text || "Automatisch erstellte Zusammenfassung (Mock).",
-      transcript: "Mock-Transkript der Audioaufnahme...",
-      priority: DEFAULT_PRIORITY,
+      id: initialReport?.id ?? Date.now(),
+      title:
+        initialReport?.title ??
+        (vorgangstyp ? `${vorgangstyp}: Lieferverspätung` : "Lieferverspätung"),
+      content:
+        [text, manualText].filter(Boolean).join("\n\n") ||
+        initialReport?.content ||
+        "Automatisch erstellte Zusammenfassung (Mock).",
+      transcript: initialReport?.transcript ?? "Mock-Transkript der Audioaufnahme...",
+      priority,
+      timestamp,
+      location,
+      vorgangstyp,
+      attachments,
     });
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <span className="text-xs text-muted-foreground">Vorlage</span>
-        {TEMPLATES.map((name) => (
-          <Button
-            key={name}
-            variant={template === name ? "default" : "outline"}
-            onClick={() => setTemplate(name)}
-          >
-            {name}
-          </Button>
-        ))}
-      </div>
-
       <Card>
         <CardContent className="flex flex-col items-center gap-3">
           <Button
@@ -268,63 +299,195 @@ function NewReport({
             {isRecording ? <SquareIcon className="size-6" /> : <MicIcon className="size-6" />}
           </Button>
           <span className="text-xs">
-            {isRecording ? "Aufnahme läuft… 00:12" : "Audio aufzeichnen"}
+            {isRecording ? "Aufnahme läuft… 00:12" : "Ton aufzeichnen"}
           </span>
         </CardContent>
       </Card>
 
       <Textarea
-        placeholder="Text eingeben…"
+        placeholder="KI-generierte Zusammenfassung"
+        aria-label="KI-generierte Zusammenfassung"
         value={text}
-        onChange={(event) => setText(event.target.value)}
+        readOnly
       />
 
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-muted-foreground">Vorgangstyp erkannt…</span>
-        <span className="flex items-center gap-2">
-          Lieferverspätung
-          <Button size="icon-xs" variant="outline" aria-label="Bestätigen">
-            <CheckIcon />
-          </Button>
-          <Button size="icon-xs" variant="outline" aria-label="Ablehnen">
-            <Trash2Icon />
-          </Button>
-        </span>
+      <div className="flex flex-col gap-2">
+        <Button
+          variant="ghost"
+          className="justify-between"
+          aria-expanded={showMetadata}
+          onClick={() => setShowMetadata((current) => !current)}
+        >
+          Metadaten
+          <ChevronDownIcon className={`transition-transform ${showMetadata ? "rotate-180" : ""}`} />
+        </Button>
+
+        {showMetadata && (
+          <div className="flex flex-col gap-4 rounded-md border p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs text-muted-foreground">Vorgangstyp</span>
+              <Select
+                value={vorgangstyp ?? NO_VORGANGSTYP_VALUE}
+                onValueChange={(next) =>
+                  setVorgangstyp(next === NO_VORGANGSTYP_VALUE ? null : next)
+                }
+              >
+                <SelectTrigger aria-label="Vorgangstyp auswählen">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectItem value={NO_VORGANGSTYP_VALUE}>Keine Auswahl</SelectItem>
+                  {VORGANGSTYPEN.map((name) => (
+                    <SelectItem key={name} value={name}>
+                      {name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs text-muted-foreground">Zeitstempel</span>
+              <span className="text-xs tabular-nums">
+                {timestamp.toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs text-muted-foreground">Ort</span>
+              <Input
+                placeholder="Ort eingeben"
+                aria-label="Ort"
+                className="w-40"
+                value={location}
+                onChange={(event) => setLocation(event.target.value)}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs text-muted-foreground">Priorität</span>
+              <PrioritySelect value={priority} onChange={setPriority} />
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="flex items-center gap-2">
-        <span className="flex-1 text-xs text-muted-foreground">
-          {attachmentCount} Anhänge gespeichert
-        </span>
-        <Button
-          size="icon-lg"
-          variant="outline"
-          className="size-10 rounded-full"
-          aria-label="Anhang hinzufügen"
-          onClick={() => setAttachmentCount((current) => current + 1)}
-        >
-          <PlusIcon />
-        </Button>
+      <PhotoAttachments photos={attachments} onChange={setAttachments} />
+
+      <div className="flex items-center justify-end gap-2">
         <Button variant="ghost" size="lg" onClick={onCancel}>
           Abbrechen
         </Button>
         <Button size="lg" onClick={finish}>
-          Fertig
+          Weiter
         </Button>
       </div>
     </div>
   );
 }
 
+function PhotoAttachments({
+  photos,
+  onChange,
+}: {
+  photos: string[];
+  onChange: (photos: string[]) => void;
+}) {
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const addPhotos = (event: ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(event.target.files ?? []);
+    const newPhotoUrls = selectedFiles.map((file) => URL.createObjectURL(file));
+    onChange([...photos, ...newPhotoUrls]);
+    event.target.value = "";
+  };
+
+  const removePhoto = (photoUrl: string) => {
+    URL.revokeObjectURL(photoUrl);
+    onChange(photos.filter((photo) => photo !== photoUrl));
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <span className="flex-1 text-xs text-muted-foreground">
+          {photos.length} Fotos angehängt
+        </span>
+        <input
+          ref={galleryInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={addPhotos}
+        />
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={addPhotos}
+        />
+        <Button
+          size="icon-lg"
+          variant="outline"
+          className="size-10 rounded-full"
+          aria-label="Foto aufnehmen"
+          onClick={() => cameraInputRef.current?.click()}
+        >
+          <CameraIcon />
+        </Button>
+        <Button
+          size="icon-lg"
+          variant="outline"
+          className="size-10 rounded-full"
+          aria-label="Foto hinzufügen"
+          onClick={() => galleryInputRef.current?.click()}
+        >
+          <PlusIcon />
+        </Button>
+      </div>
+      {photos.length > 0 && (
+        <div className="grid grid-cols-3 gap-2">
+          {photos.map((photoUrl) => (
+            <div
+              key={photoUrl}
+              className="relative aspect-square overflow-hidden rounded-md border"
+            >
+              <img src={photoUrl} alt="Angehängtes Foto" className="size-full object-cover" />
+              <Button
+                size="icon-xs"
+                variant="secondary"
+                className="absolute top-1 right-1 rounded-full"
+                aria-label="Foto entfernen"
+                onClick={() => removePhoto(photoUrl)}
+              >
+                <XIcon />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ReportDetail({
   report,
+  onBack,
   onChange,
+  onChangeLocation,
+  onChangeVorgangstyp,
+  onChangeAttachments,
   onChangePriority,
   onDelete,
   onConfirm,
 }: {
   report: Report | undefined;
+  onBack: () => void;
   onChange: (content: string) => void;
+  onChangeLocation: (location: string) => void;
+  onChangeVorgangstyp: (vorgangstyp: string | null) => void;
+  onChangeAttachments: (attachments: string[]) => void;
   onChangePriority: (priority: number) => void;
   onDelete: () => void;
   onConfirm: () => void;
@@ -336,7 +499,10 @@ function ReportDetail({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-2">
-        <CardTitle>{report.title}</CardTitle>
+        <Button variant="ghost" size="icon" aria-label="Zurück" onClick={onBack}>
+          <ArrowLeftIcon />
+        </Button>
+        <CardTitle className="flex-1">{report.title}</CardTitle>
         <PrioritySelect value={report.priority} onChange={onChangePriority} />
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -350,17 +516,46 @@ function ReportDetail({
             {report.transcript}
           </p>
         )}
-        <div className="grid grid-cols-2 gap-2">
-          {["Bild 1", "Bild 2"].map((label) => (
-            <div
-              key={label}
-              className="flex h-24 flex-col items-center justify-center gap-1 rounded-md border text-xs text-muted-foreground"
+        <div className="flex flex-col gap-2 rounded-md border p-3 text-xs">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-muted-foreground">Zeitstempel</span>
+            <span className="tabular-nums">
+              {report.timestamp.toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-muted-foreground">Vorgangstyp</span>
+            <Select
+              value={report.vorgangstyp ?? NO_VORGANGSTYP_VALUE}
+              onValueChange={(next) =>
+                onChangeVorgangstyp(next === NO_VORGANGSTYP_VALUE ? null : next)
+              }
             >
-              <ImageIcon className="size-5" />
-              {label}
-            </div>
-          ))}
+              <SelectTrigger aria-label="Vorgangstyp auswählen">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent position="popper">
+                <SelectItem value={NO_VORGANGSTYP_VALUE}>Keine Auswahl</SelectItem>
+                {VORGANGSTYPEN.map((name) => (
+                  <SelectItem key={name} value={name}>
+                    {name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-muted-foreground">Ort</span>
+            <Input
+              aria-label="Ort"
+              placeholder="Ort eingeben"
+              className="w-40"
+              value={report.location}
+              onChange={(event) => onChangeLocation(event.target.value)}
+            />
+          </div>
         </div>
+        <PhotoAttachments photos={report.attachments} onChange={onChangeAttachments} />
         <div className="flex items-center justify-between gap-2">
           <Button
             size="icon-lg"
