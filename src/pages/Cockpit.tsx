@@ -13,6 +13,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -75,15 +82,16 @@ const AUFGABEN_MOCK = [
   { id: "a-4", titel: "Winterbaumaßnahmen ab 29.11. planen" },
 ];
 
+const KEINE_AUSWAHL = "keine-auswahl";
 const PHASEN = [
   "Einrichtung",
   "Rohbau",
   "Dach/Fassade",
   "Ausbau",
-  "Tec Ausrüstung",
+  "Ausrüstung",
   "Außenanlagen",
 ];
-const GEWERKE = ["Betonarbeiten", "Maurerarbeiten", "Stahlbau", "Holzbau", "Abdichtung"];
+const GEWERKE = ["Betonarbeiten", "Mauerarbeiten", "Stahlbau", "Holzbau", "Abdichtung"];
 
 type Lieferant = { id: string; titel: string; beschreibung: string; vorschau?: string };
 
@@ -130,9 +138,14 @@ const BAUPLAENE_MOCK = [
   { id: "b-4", titel: "Abdichtungsdetail Kellerwand", status: "in Prüfung" },
 ];
 
+/** Round, tinted icon buttons: green confirms, red removes. */
+const ICON_GRUEN = "bg-green-100 text-green-700 hover:bg-green-200 hover:text-green-800";
+const ICON_GRUEN_AKTIV = "bg-green-600 text-white hover:bg-green-700 hover:text-white";
+const ICON_ROT = "bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700";
+
 function ListenEintrag({ titel, status }: { titel: string; status: string }) {
   return (
-    <div className="flex items-center justify-between gap-2 rounded-md border p-2 text-sm">
+    <div className="flex items-center justify-between gap-2 rounded-xl bg-background p-3 text-sm">
       <span>{titel}</span>
       <span className="shrink-0 text-xs text-muted-foreground">{status}</span>
     </div>
@@ -162,7 +175,7 @@ function MeldungsListe({
   const mitAktionen = Boolean(onErledigt && onAblehnen);
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="text-sm font-medium">{ueberschrift}</h2>
+      <h2 className="text-sm font-semibold text-primary">{ueberschrift}</h2>
       <Separator />
       {meldungen.length === 0 && (
         <p className="text-sm text-muted-foreground">Keine Meldungen.</p>
@@ -171,9 +184,18 @@ function MeldungsListe({
         const { id, titel, beschreibung } = meldung;
         const aufgeklappt = aufgeklappteId === id;
         return (
-          <div key={id} className="flex flex-col gap-3 rounded-md border p-3">
+          <div key={id} className="flex flex-col gap-3 rounded-xl bg-background p-3.5">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-sm">{titel}</span>
+              <button
+                type="button"
+                className={`min-w-0 flex-1 text-left text-sm hover:underline ${
+                  mitAktionen ? "" : "text-muted-foreground"
+                }`}
+                aria-expanded={aufgeklappt}
+                onClick={() => onToggle(id)}
+              >
+                {titel}
+              </button>
               <Button
                 variant="ghost"
                 size="icon"
@@ -186,22 +208,24 @@ function MeldungsListe({
             </div>
             {aufgeklappt && (
               <>
-                <p className="min-h-32 text-sm text-muted-foreground">{beschreibung}</p>
+                <p className="text-sm text-muted-foreground">{beschreibung}</p>
                 <div className="flex justify-end gap-1">
                   {mitAktionen && (
                     <>
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="icon"
                         aria-label="Erledigt"
+                        className={ICON_GRUEN}
                         onClick={() => onErledigt?.(meldung)}
                       >
                         <CheckIcon />
                       </Button>
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="icon"
                         aria-label="Ablehnen"
+                        className={ICON_ROT}
                         onClick={() => onAblehnen?.(meldung)}
                       >
                         <XIcon />
@@ -221,33 +245,6 @@ function MeldungsListe({
   );
 }
 
-function AuswahlLeiste({
-  optionen,
-  aktiv,
-  onSelect,
-  size,
-}: {
-  optionen: string[];
-  aktiv: string;
-  onSelect: (option: string) => void;
-  size: "sm" | "default";
-}) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {optionen.map((option) => (
-        <Button
-          key={option}
-          size={size}
-          variant={aktiv === option ? "secondary" : "outline"}
-          onClick={() => onSelect(option)}
-        >
-          {option}
-        </Button>
-      ))}
-    </div>
-  );
-}
-
 type Aufgabe = { id: string; titel: string; erledigt: boolean };
 
 function AufgabenListe({
@@ -262,24 +259,28 @@ function AufgabenListe({
   return (
     <div className="flex flex-col gap-2">
       {aufgaben.map(({ id, titel, erledigt }) => (
-        <div key={id} className="flex items-center justify-between gap-2 rounded-md border p-2">
-          <span className={`text-sm ${erledigt ? "text-muted-foreground line-through" : ""}`}>
+        <div key={id} className="flex items-center justify-between gap-2 rounded-xl bg-background p-2.5">
+          <span
+            className={`min-w-0 flex-1 text-sm hyphens-auto ${erledigt ? "text-muted-foreground line-through" : ""}`}
+          >
             {titel}
           </span>
-          <div className="flex gap-1">
+          <div className="flex shrink-0 gap-1.5">
             <Button
-              variant={erledigt ? "secondary" : "outline"}
+              variant="ghost"
               size="icon"
               aria-label={erledigt ? "Aufgabe wieder öffnen" : "Aufgabe erledigen"}
               aria-pressed={erledigt}
+              className={erledigt ? ICON_GRUEN_AKTIV : ICON_GRUEN}
               onClick={() => onErledigen(id)}
             >
               <CheckIcon />
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
               aria-label="Aufgabe löschen"
+              className={ICON_ROT}
               onClick={() => onLoeschen(id)}
             >
               <Trash2Icon />
@@ -378,22 +379,25 @@ export function Cockpit() {
 
   return (
     <div className="flex h-screen min-w-5xl flex-col overflow-hidden bg-background text-foreground">
-      <header className="flex h-12 items-center border-b px-6">
-        <h1 className="text-sm font-medium">Cockpit</h1>
+      <header className="flex h-12 items-center justify-between gap-4 border-b bg-card px-6">
+        <div className="flex items-baseline gap-3">
+          <h1 className="text-base font-semibold text-primary">Cockpit</h1>
+          <span className="text-xs text-muted-foreground">
+            {TAGESBERICHT.projekt} · {MELDUNGSDATUM}
+          </span>
+        </div>
+        <Button variant="outline" size="sm" asChild>
+          <a href="/satellite">Baustellen-App öffnen</a>
+        </Button>
       </header>
 
       <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-4 p-6">
         <Card className="min-h-0 overflow-hidden">
-          <CardHeader className="flex shrink-0 flex-wrap gap-2">
-            <Button variant="outline" size="sm">
-              Datum: {MELDUNGSDATUM}
-            </Button>
-            <Button variant="outline" size="sm">
-              Meldungen
-            </Button>
-            <Button variant="outline" size="sm">
-              Thema: Defekte
-            </Button>
+          <CardHeader className="flex shrink-0 flex-wrap items-center justify-between gap-2">
+            <CardTitle>Meldungen</CardTitle>
+            <span className="text-xs text-muted-foreground">
+              {anstehend.length} anstehend · {abgeschlossen.length} abgeschlossen
+            </span>
           </CardHeader>
           <CardContent className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto">
             <MeldungsListe
@@ -414,7 +418,7 @@ export function Cockpit() {
         </Card>
 
         <div className="flex min-h-0 flex-col gap-4">
-          <div className="grid h-64 shrink-0 grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4">
+          <div className="grid h-56 shrink-0 grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4">
             <Card className="min-h-0 overflow-hidden">
               <CardHeader>
                 <CardTitle>
@@ -496,7 +500,7 @@ export function Cockpit() {
                   )}
                   <TabsContent value="termine" className="flex flex-col gap-2">
                     {termine.map(({ id, titel }) => (
-                      <div key={id} className="rounded-md border p-2 text-sm">
+                      <div key={id} className="rounded-xl bg-background p-3 text-sm">
                         {titel}
                       </div>
                     ))}
@@ -523,53 +527,60 @@ export function Cockpit() {
 
           <Card className="min-h-0 flex-1 overflow-hidden">
             <Tabs
-              defaultValue="lieferungen"
+              defaultValue="vertraege"
               className="flex h-full min-h-0 flex-col gap-(--card-spacing)"
             >
               <CardHeader className="shrink-0">
                 <TabsList className="w-auto">
-                  <TabsTrigger value="lieferungen">Lieferungen</TabsTrigger>
-                  <TabsTrigger value="subunternehmer">Subunternehmer</TabsTrigger>
+                  <TabsTrigger value="vertraege">Verträge</TabsTrigger>
                   <TabsTrigger value="bauplaene">Baupläne</TabsTrigger>
+                  <TabsTrigger value="lieferungen">Lieferungen</TabsTrigger>
                 </TabsList>
               </CardHeader>
               <CardContent className="min-h-0 flex-1 overflow-y-auto">
-                <TabsContent value="lieferungen" className="flex flex-col gap-3">
-                  <AuswahlLeiste
-                    optionen={PHASEN}
-                    aktiv={aktivePhase}
-                    onSelect={setAktivePhase}
-                    size="default"
-                  />
-                  <AuswahlLeiste
-                    optionen={GEWERKE}
-                    aktiv={aktivesGewerk}
-                    onSelect={setAktivesGewerk}
-                    size="sm"
-                  />
-                  <div className="grid h-72 grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4">
+                <TabsContent
+                  value="vertraege"
+                  className="grid h-full min-h-0 grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4"
+                >
                     <div className="flex min-h-0 flex-col gap-3">
                       <div className="flex gap-2">
                         <Input placeholder="Stichwortsuche" aria-label="Stichwortsuche" />
-                        <Button variant="outline" onClick={() => vertragsInput.current?.click()}>
-                          Vertrag hinzufügen
-                        </Button>
-                        <input
-                          ref={vertragsInput}
-                          type="file"
-                          accept=".pdf,.doc,.docx"
-                          className="hidden"
-                          onChange={vertragHinzufuegen}
-                        />
+                        <Select value={aktivePhase} onValueChange={setAktivePhase}>
+                          <SelectTrigger aria-label="Phase" className="w-40 shrink-0">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={KEINE_AUSWAHL}>Keine Auswahl</SelectItem>
+                            {PHASEN.map((phase) => (
+                              <SelectItem key={phase} value={phase}>
+                                {phase}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select value={aktivesGewerk} onValueChange={setAktivesGewerk}>
+                          <SelectTrigger aria-label="Gewerk" className="w-40 shrink-0">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={KEINE_AUSWAHL}>Keine Auswahl</SelectItem>
+                            {GEWERKE.map((gewerk) => (
+                              <SelectItem key={gewerk} value={gewerk}>
+                                {gewerk}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
+                      <div className="flex min-h-0 flex-1 flex-col gap-3 rounded-md border p-3">
                       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
                         {lieferanten.map(({ id, titel, beschreibung }) => (
                           <button
                             key={id}
                             type="button"
                             onClick={() => setAusgewaehlterLieferantId(id)}
-                            className={`flex h-16 shrink-0 items-start justify-between gap-2 rounded-md border p-3 text-left ${
-                              ausgewaehlterLieferantId === id ? "border-primary" : ""
+                            className={`flex h-16 shrink-0 items-start justify-between gap-2 rounded-xl bg-background p-3.5 text-left ${
+                              ausgewaehlterLieferantId === id ? "ring-2 ring-primary" : ""
                             }`}
                           >
                             <div className="flex flex-col">
@@ -580,14 +591,33 @@ export function Cockpit() {
                                 </span>
                               )}
                             </div>
-                            {beschreibung && (
+                            <div className="flex size-10 shrink-0 items-center justify-center rounded-md border">
                               <FileTextIcon className="size-6 text-muted-foreground" />
-                            )}
+                            </div>
                           </button>
                         ))}
                       </div>
+                      <Separator />
+                      <div className="flex justify-center">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          aria-label="Vertrag hinzufügen"
+                          onClick={() => vertragsInput.current?.click()}
+                        >
+                          <PlusIcon />
+                        </Button>
+                        <input
+                          ref={vertragsInput}
+                          type="file"
+                          accept=".pdf,.doc,.docx"
+                          className="hidden"
+                          onChange={vertragHinzufuegen}
+                        />
+                      </div>
+                      </div>
                     </div>
-                    <div className="flex min-h-0 flex-col gap-2 overflow-y-auto rounded-md border p-3">
+                    <div className="flex min-h-0 flex-col gap-2 overflow-y-auto rounded-xl bg-background p-3.5">
                       <span className="text-sm">Vorschau</span>
                       {ausgewaehlterLieferant && (
                         <>
@@ -598,15 +628,14 @@ export function Cockpit() {
                         </>
                       )}
                     </div>
-                  </div>
-                </TabsContent>
-                <TabsContent value="subunternehmer" className="flex flex-col gap-2">
-                  {SUBUNTERNEHMER_MOCK.map(({ id, titel, status }) => (
-                    <ListenEintrag key={id} titel={titel} status={status} />
-                  ))}
                 </TabsContent>
                 <TabsContent value="bauplaene" className="flex flex-col gap-2">
                   {BAUPLAENE_MOCK.map(({ id, titel, status }) => (
+                    <ListenEintrag key={id} titel={titel} status={status} />
+                  ))}
+                </TabsContent>
+                <TabsContent value="lieferungen" className="flex flex-col gap-2">
+                  {SUBUNTERNEHMER_MOCK.map(({ id, titel, status }) => (
                     <ListenEintrag key={id} titel={titel} status={status} />
                   ))}
                 </TabsContent>
