@@ -1,16 +1,9 @@
 import { useRef, useState, type ChangeEvent } from "react";
-import {
-  CheckIcon,
-  EyeIcon,
-  FileTextIcon,
-  MailIcon,
-  PlusIcon,
-  Trash2Icon,
-  XIcon,
-} from "lucide-react";
+import { CheckIcon, EyeIcon, MailIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
 
 import { CockpitHeader } from "@/components/CockpitHeader";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -61,28 +54,9 @@ type BerichtAbschnitt = { titel: string; text: string };
 const berichtAlsText = (abschnitte: BerichtAbschnitt[]) =>
   abschnitte.map(({ titel, text }) => `${titel}\n${text}`).join("\n\n");
 
-const TERMINE_MOCK = [
-  { id: "t-1", titel: "Abstimmung Betonlieferant, 10:15" },
-  { id: "t-2", titel: "Baubesprechung Bauherr, 14:00" },
-  { id: "t-3", titel: "Abnahme Bewehrung Abschnitt C, Mo 07:30" },
-];
-
-const AUFGABEN_MOCK = [
-  { id: "a-1", titel: "Ersatzpumpe Abschnitt B bestätigen" },
-  { id: "a-2", titel: "Behinderungsanzeige Bewehrungspläne versenden" },
-  { id: "a-3", titel: "Lieferschein Beton gegenzeichnen" },
-  { id: "a-4", titel: "Winterbaumaßnahmen ab 29.11. planen" },
-];
 
 const KEINE_AUSWAHL = "keine-auswahl";
-const PHASEN = [
-  "Einrichtung",
-  "Rohbau",
-  "Dach/Fassade",
-  "Ausbau",
-  "Ausrüstung",
-  "Außenanlagen",
-];
+const PHASEN = ["Einrichtung", "Rohbau", "Dach/Fassade", "Ausbau", "Ausrüstung", "Außenanlagen"];
 const GEWERKE = ["Betonarbeiten", "Mauerarbeiten", "Stahlbau", "Holzbau", "Abdichtung"];
 
 type Lieferant = { id: string; titel: string; beschreibung: string; vorschau?: string };
@@ -130,6 +104,26 @@ const BAUPLAENE_MOCK = [
   { id: "b-4", titel: "Abdichtungsdetail Kellerwand", status: "in Prüfung" },
 ];
 
+const TERMINE_HEUTE_MOCK = [
+  { id: "t-1", titel: "Meeting Bauherr", startStunde: 8, dauerStunden: 1.5, eigen: true },
+  { id: "t-2", titel: "Parkettierung", startStunde: 8.5, dauerStunden: 2.5, eigen: false },
+  { id: "t-3", titel: "Abnahme Rohbau", startStunde: 10.5, dauerStunden: 1, eigen: true },
+  { id: "t-4", titel: "Glaslieferung", startStunde: 13, dauerStunden: 1, eigen: false },
+];
+
+const AUFGABEN_MOCK = [
+  { id: 1, titel: "Betonpumpe Abschnitt B prüfen", erledigt: false },
+  { id: 2, titel: "Lieferschein Glas unterschreiben", erledigt: true },
+  { id: 3, titel: "Abnahmeprotokoll Rohbau erstellen", erledigt: false },
+  { id: 4, titel: "Sicherheitseinweisung Parkettierer", erledigt: true },
+  { id: 5, titel: "Baustrom Container 2 kontrollieren", erledigt: false },
+];
+
+const formatUhrzeit = (stunde: number) => {
+  const gesamtMinuten = Math.round(stunde * 60);
+  return `${String(Math.floor(gesamtMinuten / 60)).padStart(2, "0")}:${String(gesamtMinuten % 60).padStart(2, "0")}`;
+};
+
 /** Round, tinted icon buttons: green confirms, red removes. */
 const ICON_GRUEN = "bg-green-100 text-green-700 hover:bg-green-200 hover:text-green-800";
 const ICON_ROT = "bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700";
@@ -140,6 +134,119 @@ function ListenEintrag({ titel, status }: { titel: string; status: string }) {
       <span>{titel}</span>
       <span className="shrink-0 text-xs text-muted-foreground">{status}</span>
     </div>
+  );
+}
+
+function TermineListe() {
+  return (
+    <Card className="flex min-h-0 flex-col overflow-hidden">
+      <CardHeader className="shrink-0">
+        <CardTitle>Termine heute</CardTitle>
+      </CardHeader>
+      <ScrollArea className="min-h-0 flex-1">
+        <CardContent className="flex flex-col gap-2">
+          {TERMINE_HEUTE_MOCK.map(({ id, titel, startStunde, dauerStunden, eigen }) => (
+            <div key={id} className="flex items-center gap-3 rounded-xl bg-background p-3">
+              <span className="w-14 shrink-0 text-sm font-medium tabular-nums">
+                {formatUhrzeit(startStunde)}
+              </span>
+              <div className="flex min-w-0 flex-col">
+                <span className="text-sm">{titel}</span>
+                <span className="text-xs text-muted-foreground">
+                  bis {formatUhrzeit(startStunde + dauerStunden)} Uhr ·{" "}
+                  {eigen ? "Eigener Termin" : "Fremdgewerk"}
+                </span>
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </ScrollArea>
+    </Card>
+  );
+}
+
+function AufgabenListe() {
+  const [aufgaben, setAufgaben] = useState(AUFGABEN_MOCK);
+  const [neueAufgabe, setNeueAufgabe] = useState("");
+
+  const aufgabeUmschalten = (id: number) =>
+    setAufgaben((aktuell) =>
+      aktuell.map((aufgabe) =>
+        aufgabe.id === id ? { ...aufgabe, erledigt: !aufgabe.erledigt } : aufgabe,
+      ),
+    );
+
+  const aufgabeLoeschen = (id: number) =>
+    setAufgaben((aktuell) => aktuell.filter((aufgabe) => aufgabe.id !== id));
+
+  const aufgabeHinzufuegen = () => {
+    const titel = neueAufgabe.trim();
+    if (!titel) return;
+    setAufgaben((aktuell) => [...aktuell, { id: Date.now(), titel, erledigt: false }]);
+    setNeueAufgabe("");
+  };
+
+  return (
+    <Card className="flex min-h-0 flex-col overflow-hidden">
+      <CardHeader className="shrink-0">
+        <CardTitle>Aufgabenliste</CardTitle>
+      </CardHeader>
+      <CardContent className="flex min-h-0 flex-1 flex-col gap-3">
+        <ScrollArea className="-mr-3 min-h-0 flex-1">
+          <ul className="flex flex-col gap-2 pr-3">
+            {aufgaben.map(({ id, titel, erledigt }) => (
+              <li key={id} className="flex items-start gap-3 rounded-xl bg-background p-3">
+                <Checkbox
+                  id={`aufgabe-${id}`}
+                  className="mt-0.5"
+                  checked={erledigt}
+                  onCheckedChange={() => aufgabeUmschalten(id)}
+                />
+                <label
+                  htmlFor={`aufgabe-${id}`}
+                  className={`flex-1 text-sm ${erledigt ? "text-muted-foreground line-through" : ""}`}
+                >
+                  {titel}
+                </label>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`${titel} löschen`}
+                  onClick={() => aufgabeLoeschen(id)}
+                >
+                  <Trash2Icon />
+                </Button>
+              </li>
+            ))}
+            {aufgaben.length === 0 && (
+              <p className="text-sm text-muted-foreground">Keine Aufgaben vorhanden.</p>
+            )}
+          </ul>
+        </ScrollArea>
+        <form
+          className="flex shrink-0 items-center gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            aufgabeHinzufuegen();
+          }}
+        >
+          <Input
+            placeholder="Neue Aufgabe…"
+            aria-label="Neue Aufgabe"
+            value={neueAufgabe}
+            onChange={(event) => setNeueAufgabe(event.target.value)}
+          />
+          <Button
+            type="submit"
+            size="icon"
+            aria-label="Aufgabe hinzufügen"
+            disabled={!neueAufgabe.trim()}
+          >
+            <PlusIcon />
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -166,9 +273,7 @@ function MeldungsListe({
     <section className="flex flex-col gap-2">
       <h2 className="text-sm font-semibold text-primary">{ueberschrift}</h2>
       <Separator />
-      {meldungen.length === 0 && (
-        <p className="text-sm text-muted-foreground">Keine Meldungen.</p>
-      )}
+      {meldungen.length === 0 && <p className="text-sm text-muted-foreground">Keine Meldungen.</p>}
       {meldungen.map((meldung) => {
         const { id, content, attachments } = meldung;
         const titel = anzeigeTitel(meldung);
@@ -252,101 +357,15 @@ function MeldungsListe({
   );
 }
 
-type Aufgabe = { id: string; titel: string };
-
-/** Green (erledigt) and red (verwerfen) both take the task off the list. */
-function AufgabenListe({
-  aufgaben,
-  onEntfernen,
-}: {
-  aufgaben: Aufgabe[];
-  onEntfernen: (id: string) => void;
-}) {
-  if (aufgaben.length === 0) {
-    return <p className="text-sm text-muted-foreground">Keine offenen Aufgaben.</p>;
-  }
-
-  return (
-    <div className="flex flex-col gap-2">
-      {aufgaben.map(({ id, titel }) => (
-        <div key={id} className="flex items-center justify-between gap-2 rounded-xl bg-background p-2.5">
-          <span className="min-w-0 flex-1 text-sm hyphens-auto">{titel}</span>
-          <div className="flex shrink-0 gap-1.5">
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Aufgabe erledigt"
-              className={ICON_GRUEN}
-              onClick={() => onEntfernen(id)}
-            >
-              <CheckIcon />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Aufgabe verwerfen"
-              className={ICON_ROT}
-              onClick={() => onEntfernen(id)}
-            >
-              <Trash2Icon />
-            </Button>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/** Input row shown when adding a Termin or an Aufgabe. */
-function NeuerEintrag({
-  platzhalter,
-  onHinzufuegen,
-  onAbbrechen,
-}: {
-  platzhalter: string;
-  onHinzufuegen: (titel: string) => void;
-  onAbbrechen: () => void;
-}) {
-  const [titel, setTitel] = useState("");
-  const hinzufuegen = () => {
-    if (titel.trim()) onHinzufuegen(titel.trim());
-  };
-
-  return (
-    <div className="flex gap-2">
-      <Input
-        autoFocus
-        value={titel}
-        placeholder={platzhalter}
-        aria-label={platzhalter}
-        onChange={(event) => setTitel(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") hinzufuegen();
-          if (event.key === "Escape") onAbbrechen();
-        }}
-      />
-      <Button variant="outline" size="icon" aria-label="Übernehmen" onClick={hinzufuegen}>
-        <CheckIcon />
-      </Button>
-    </div>
-  );
-}
-
 export function Cockpit() {
   const [aufgeklappteMeldungId, setAufgeklappteMeldungId] = useState<string | null>("m-1");
   const [aktivePhase, setAktivePhase] = useState(PHASEN[1] ?? "");
   const [aktivesGewerk, setAktivesGewerk] = useState(GEWERKE[1] ?? "");
-  const [ausgewaehlterLieferantId, setAusgewaehlterLieferantId] = useState<string | null>("l-1");
+  const [offenerVertragId, setOffenerVertragId] = useState<string | null>(null);
 
   const { meldungen, fehler: meldungenFehler, aendere: aendereMeldung } = useMeldungen();
   const anstehend = meldungen.filter(({ status }) => status === "anstehend");
   const abgeschlossen = meldungen.filter(({ status }) => status === "abgeschlossen");
-  const [termine, setTermine] = useState(TERMINE_MOCK);
-  const [aufgaben, setAufgaben] = useState<Aufgabe[]>(() =>
-    AUFGABEN_MOCK,
-  );
-  const [planTab, setPlanTab] = useState("aufgaben");
-  const [neuerEintragOffen, setNeuerEintragOffen] = useState(false);
   const [berichtAbschnitte, setBerichtAbschnitte] = useState<BerichtAbschnitt[]>(
     TAGESBERICHT.abschnitte,
   );
@@ -367,29 +386,21 @@ export function Cockpit() {
   const meldungAblehnen = (meldung: Meldung) =>
     aendereMeldung(meldung.id, { status: "abgelehnt" }, { sofort: true });
 
-  const eintragHinzufuegen = (titel: string) => {
-    const id = crypto.randomUUID();
-    if (planTab === "termine") setTermine((aktuell) => [...aktuell, { id, titel }]);
-    else setAufgaben((aktuell) => [...aktuell, { id, titel }]);
-    setNeuerEintragOffen(false);
-  };
-
   const vertragHinzufuegen = (event: ChangeEvent<HTMLInputElement>) => {
     const datei = event.target.files?.[0];
     if (!datei) return;
     const id = crypto.randomUUID();
     setLieferanten((aktuell) => [...aktuell, { id, titel: datei.name, beschreibung: "Vertrag" }]);
-    setAusgewaehlterLieferantId(id);
     event.target.value = "";
   };
 
-  const ausgewaehlterLieferant = lieferanten.find(({ id }) => id === ausgewaehlterLieferantId);
+  const offenerVertrag = lieferanten.find(({ id }) => id === offenerVertragId);
 
   return (
     <div className="flex h-screen min-w-5xl flex-col overflow-hidden bg-background text-foreground">
       <CockpitHeader projekt={TAGESBERICHT.projekt} datum={MELDUNGSDATUM} />
 
-      <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-4 p-6">
+      <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,4fr)_minmax(0,6fr)_minmax(0,3fr)] gap-4 p-6">
         <Card className="min-h-0 overflow-hidden">
           <CardHeader className="flex shrink-0 flex-wrap items-center justify-between gap-2">
             <CardTitle>Meldungen</CardTitle>
@@ -419,77 +430,23 @@ export function Cockpit() {
         </Card>
 
         <div className="flex min-h-0 flex-col gap-4">
-          <div className="grid h-56 shrink-0 grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4">
-            <Card className="min-h-0 overflow-hidden">
-              <CardHeader>
-                <CardTitle>
-                  Tagesbericht {TAGESBERICHT.datum}
-                  <br />
-                  {TAGESBERICHT.projekt}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="min-h-0 flex-1 text-sm text-muted-foreground">
-                {TAGESBERICHT.zusammenfassung}
-              </CardContent>
-              <CardContent className="flex justify-end">
-                <Button variant="outline" onClick={() => setBerichtOffen(true)}>
-                  Bericht sehen
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="min-h-0 overflow-hidden">
-              <Tabs
-                value={planTab}
-                onValueChange={(tab) => {
-                  setPlanTab(tab);
-                  setNeuerEintragOffen(false);
-                }}
-                className="flex h-full min-h-0 flex-col gap-(--card-spacing)"
-              >
-                <CardHeader className="flex shrink-0 items-center justify-center gap-2">
-                  <TabsList className="w-auto">
-                    <TabsTrigger value="termine">Termine</TabsTrigger>
-                    <TabsTrigger value="aufgaben">Aufgaben</TabsTrigger>
-                  </TabsList>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    aria-label={planTab === "termine" ? "Termin hinzufügen" : "Aufgabe hinzufügen"}
-                    onClick={() => setNeuerEintragOffen(true)}
-                  >
-                    <PlusIcon />
-                  </Button>
-                </CardHeader>
-                <ScrollArea className="min-h-0 flex-1">
-                  <CardContent className="flex flex-col gap-2">
-                    {neuerEintragOffen && (
-                      <NeuerEintrag
-                        platzhalter={planTab === "termine" ? "Neuer Termin" : "Neue Aufgabe"}
-                        onHinzufuegen={eintragHinzufuegen}
-                        onAbbrechen={() => setNeuerEintragOffen(false)}
-                      />
-                    )}
-                    <TabsContent value="termine" className="flex flex-col gap-2">
-                      {termine.map(({ id, titel }) => (
-                        <div key={id} className="rounded-xl bg-background p-3 text-sm">
-                          {titel}
-                        </div>
-                      ))}
-                    </TabsContent>
-                    <TabsContent value="aufgaben">
-                      <AufgabenListe
-                        aufgaben={aufgaben}
-                        onEntfernen={(id) =>
-                          setAufgaben((aktuell) => aktuell.filter((aufgabe) => aufgabe.id !== id))
-                        }
-                      />
-                    </TabsContent>
-                  </CardContent>
-                </ScrollArea>
-              </Tabs>
-            </Card>
-          </div>
+          <Card className="h-56 shrink-0 overflow-hidden">
+            <CardHeader>
+              <CardTitle>
+                Tagesbericht {TAGESBERICHT.datum}
+                <br />
+                {TAGESBERICHT.projekt}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="min-h-0 flex-1 text-sm text-muted-foreground">
+              {TAGESBERICHT.zusammenfassung}
+            </CardContent>
+            <CardContent className="flex justify-end">
+              <Button variant="outline" onClick={() => setBerichtOffen(true)}>
+                Bericht sehen
+              </Button>
+            </CardContent>
+          </Card>
 
           <Card className="min-h-0 flex-1 overflow-hidden">
             <Tabs
@@ -504,51 +461,44 @@ export function Cockpit() {
                 </TabsList>
               </CardHeader>
               <CardContent className="min-h-0 flex-1 overflow-y-auto">
-                <TabsContent
-                  value="vertraege"
-                  className="grid h-full min-h-0 grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4"
-                >
-                    <div className="flex min-h-0 flex-col gap-3">
-                      <div className="flex gap-2">
-                        <Input placeholder="Stichwortsuche" aria-label="Stichwortsuche" />
-                        <Select value={aktivePhase} onValueChange={setAktivePhase}>
-                          <SelectTrigger aria-label="Phase" className="w-40 shrink-0">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={KEINE_AUSWAHL}>Keine Auswahl</SelectItem>
-                            {PHASEN.map((phase) => (
-                              <SelectItem key={phase} value={phase}>
-                                {phase}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Select value={aktivesGewerk} onValueChange={setAktivesGewerk}>
-                          <SelectTrigger aria-label="Gewerk" className="w-40 shrink-0">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={KEINE_AUSWAHL}>Keine Auswahl</SelectItem>
-                            {GEWERKE.map((gewerk) => (
-                              <SelectItem key={gewerk} value={gewerk}>
-                                {gewerk}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="flex min-h-0 flex-1 flex-col gap-2">
-                      <ScrollArea className="min-h-0 flex-1">
+                <TabsContent value="vertraege" className="flex h-full min-h-0 flex-col">
+                  <div className="flex min-h-0 flex-col gap-3">
+                    <div className="flex gap-2">
+                      <Input placeholder="Stichwortsuche" aria-label="Stichwortsuche" />
+                      <Select value={aktivePhase} onValueChange={setAktivePhase}>
+                        <SelectTrigger aria-label="Phase" className="w-40 shrink-0">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={KEINE_AUSWAHL}>Keine Auswahl</SelectItem>
+                          {PHASEN.map((phase) => (
+                            <SelectItem key={phase} value={phase}>
+                              {phase}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select value={aktivesGewerk} onValueChange={setAktivesGewerk}>
+                        <SelectTrigger aria-label="Gewerk" className="w-40 shrink-0">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={KEINE_AUSWAHL}>Keine Auswahl</SelectItem>
+                          {GEWERKE.map((gewerk) => (
+                            <SelectItem key={gewerk} value={gewerk}>
+                              {gewerk}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex min-h-0 flex-1 flex-col gap-2">
+                      <ScrollArea className="-mr-3 min-h-0 flex-1">
                         <div className="flex flex-col gap-2 pr-3">
                           {lieferanten.map(({ id, titel, beschreibung }) => (
-                            <button
+                            <div
                               key={id}
-                              type="button"
-                              onClick={() => setAusgewaehlterLieferantId(id)}
-                              className={`flex h-14 shrink-0 items-start justify-between gap-2 rounded-lg bg-background px-3 py-2 text-left ${
-                                ausgewaehlterLieferantId === id ? "ring-2 ring-inset ring-primary" : ""
-                              }`}
+                              className="flex h-14 shrink-0 items-center justify-between gap-2 rounded-lg bg-background px-3 py-2"
                             >
                               <div className="flex flex-col">
                                 <span className="text-sm">{titel}</span>
@@ -558,10 +508,15 @@ export function Cockpit() {
                                   </span>
                                 )}
                               </div>
-                              <div className="flex size-8 shrink-0 items-center justify-center rounded-md border">
-                                <FileTextIcon className="size-5 text-muted-foreground" />
-                              </div>
-                            </button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label="Vertrag ansehen"
+                                onClick={() => setOffenerVertragId(id)}
+                              >
+                                <EyeIcon />
+                              </Button>
+                            </div>
                           ))}
                         </div>
                       </ScrollArea>
@@ -583,21 +538,8 @@ export function Cockpit() {
                           onChange={vertragHinzufuegen}
                         />
                       </div>
-                      </div>
                     </div>
-                    <ScrollArea className="h-full min-h-0 rounded-xl bg-background">
-                    <div className="flex flex-col gap-2 p-3">
-                      <span className="text-sm">Vorschau</span>
-                      {ausgewaehlterLieferant && (
-                        <>
-                          <span className="text-xs font-medium">{ausgewaehlterLieferant.titel}</span>
-                          <span className="text-xs whitespace-pre-line text-muted-foreground">
-                            {ausgewaehlterLieferant.vorschau ?? ausgewaehlterLieferant.beschreibung}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                    </ScrollArea>
+                  </div>
                 </TabsContent>
                 <TabsContent value="bauplaene" className="flex flex-col gap-2">
                   {BAUPLAENE_MOCK.map(({ id, titel, status }) => (
@@ -613,7 +555,38 @@ export function Cockpit() {
             </Tabs>
           </Card>
         </div>
+
+        <div className="grid min-h-0 grid-rows-[minmax(0,1fr)_minmax(0,1fr)] gap-4">
+          <TermineListe />
+          <AufgabenListe />
+        </div>
       </main>
+
+      <Dialog
+        open={offenerVertrag !== undefined}
+        onOpenChange={(offen) => !offen && setOffenerVertragId(null)}
+      >
+        <DialogContent className="h-[calc(100vh-2rem)] grid-rows-[auto_minmax(0,1fr)] sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Vertrag</DialogTitle>
+          </DialogHeader>
+          {offenerVertrag && (
+            <ScrollArea className="min-h-0 rounded-xl bg-background">
+              <article className="flex flex-col gap-4 p-4">
+                <h1 className="text-lg font-semibold">{offenerVertrag.titel}</h1>
+                {offenerVertrag.beschreibung && (
+                  <h2 className="text-sm font-semibold text-primary">
+                    {offenerVertrag.beschreibung}
+                  </h2>
+                )}
+                <p className="text-sm whitespace-pre-line">
+                  {offenerVertrag.vorschau ?? "Keine Vorschau verfügbar."}
+                </p>
+              </article>
+            </ScrollArea>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={berichtOffen} onOpenChange={setBerichtOffen}>
         <DialogContent className="h-[calc(100vh-2rem)] grid-rows-[auto_minmax(0,1fr)_auto] sm:max-w-2xl">
@@ -647,10 +620,16 @@ export function Cockpit() {
             </article>
           </ScrollArea>
           <DialogFooter className="sm:justify-start">
-            <Button variant="outline" onClick={() => alsPdfHerunterladen(berichtTitel, berichtText)}>
+            <Button
+              variant="outline"
+              onClick={() => alsPdfHerunterladen(berichtTitel, berichtText)}
+            >
               PDF
             </Button>
-            <Button variant="outline" onClick={() => alsWordHerunterladen(berichtTitel, berichtText)}>
+            <Button
+              variant="outline"
+              onClick={() => alsWordHerunterladen(berichtTitel, berichtText)}
+            >
               Word
             </Button>
             <Button variant="outline" onClick={() => setMailOffen(true)}>
