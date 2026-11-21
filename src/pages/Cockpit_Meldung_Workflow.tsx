@@ -57,7 +57,7 @@ import { Marker, MarkerContent, MarkerIcon } from "@/components/ui/marker";
 import { Message, MessageContent } from "@/components/ui/message";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { alsWordHerunterladen, inNeuemFensterOeffnen } from "@/lib/export";
+import { alsPdfHerunterladen, alsWordHerunterladen } from "@/lib/export";
 
 // Mock-Daten (fiktives Projekt Wohnanlage Lindenhof, Haus B), bis die Anbindung steht
 const SUBUNTERNEHMER = [
@@ -514,7 +514,7 @@ export function CockpitMeldungWorkflow() {
           <Button
             variant="outline"
             disabled={!exportText}
-            onClick={() => inNeuemFensterOeffnen(exportTitel, exportText, true)}
+            onClick={() => alsPdfHerunterladen(exportTitel, exportText)}
           >
             PDF
           </Button>
