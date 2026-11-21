@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import {
   ArrowLeftIcon,
   CameraIcon,
@@ -27,6 +27,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useDictation } from "@/lib/speech";
+import { summarizeTranscript, type ReportSummary } from "@/lib/summarize";
 
 type Report = {
   id: number;
@@ -274,15 +275,42 @@ function NewReport({
   const [location, setLocation] = useState(initialReport?.location ?? "");
   const [priority, setPriority] = useState(initialReport?.priority ?? DEFAULT_PRIORITY);
   const [attachments, setAttachments] = useState<string[]>(initialReport?.attachments ?? []);
+  const [summary, setSummary] = useState<ReportSummary | null>(null);
+  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+
+  // Every new transcript is summarized; the AI suggestions prefill the metadata.
+  useEffect(() => {
+    if (!transcript) return;
+    let cancelled = false;
+    setIsSummarizing(true);
+    setSummaryError(null);
+    summarizeTranscript(transcript)
+      .then((result) => {
+        if (cancelled) return;
+        setSummary(result);
+        setVorgangstyp(result.vorgangstyp);
+        setPriority(result.priority);
+        setLocation((current) => result.location || current);
+      })
+      .catch((error: Error) => !cancelled && setSummaryError(error.message))
+      .finally(() => !cancelled && setIsSummarizing(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [transcript]);
+
+  const isBusy = dictation.status === "transcribing" || isSummarizing;
 
   const finish = () =>
     onFinish({
       id: initialReport?.id ?? Date.now(),
       title:
+        summary?.title ??
         initialReport?.title ??
         (vorgangstyp ? `${vorgangstyp}: Lieferverspätung` : "Lieferverspätung"),
       content:
-        [transcript, manualText].filter(Boolean).join("\n\n") ||
+        [summary?.summary, manualText].filter(Boolean).join("\n\n") ||
         initialReport?.content ||
         "Automatisch erstellte Zusammenfassung (Mock).",
       transcript: transcript || initialReport?.transcript || "",
@@ -302,7 +330,7 @@ function NewReport({
             variant={isRecording ? "destructive" : "outline"}
             className="size-16 rounded-full"
             aria-label={isRecording ? "Aufnahme beenden" : "Aufnahme starten"}
-            disabled={dictation.status === "transcribing"}
+            disabled={isBusy}
             onClick={isRecording ? dictation.stop : dictation.start}
           >
             {isRecording ? <SquareIcon className="size-6" /> : <MicIcon className="size-6" />}
@@ -310,16 +338,18 @@ function NewReport({
           <span className="text-xs tabular-nums">
             {dictation.status === "recording" && `Aufnahme läuft… ${formatDuration(dictation.elapsed)}`}
             {dictation.status === "transcribing" && "Wird transkribiert…"}
-            {dictation.status === "idle" && "Ton aufzeichnen"}
+            {dictation.status === "idle" && (isSummarizing ? "Wird zusammengefasst…" : "Ton aufzeichnen")}
           </span>
-          {dictation.error && <span className="text-xs text-destructive">{dictation.error}</span>}
+          {(dictation.error ?? summaryError) && (
+            <span className="text-xs text-destructive">{dictation.error ?? summaryError}</span>
+          )}
         </CardContent>
       </Card>
 
       <Textarea
         placeholder="KI-generierte Zusammenfassung"
         aria-label="KI-generierte Zusammenfassung"
-        value={transcript}
+        value={summary?.summary ?? ""}
         readOnly
       />
 
@@ -387,7 +417,7 @@ function NewReport({
         <Button variant="ghost" size="lg" onClick={onCancel}>
           Abbrechen
         </Button>
-        <Button size="lg" onClick={finish}>
+        <Button size="lg" disabled={isBusy} onClick={finish}>
           Weiter
         </Button>
       </div>

@@ -1,5 +1,6 @@
 import { serve } from "bun";
 import index from "./index.html";
+import { handleSummarize } from "./server/summarize";
 import { handleTranscribe } from "./server/transcribe";
 
 const server = serve({
@@ -8,6 +9,7 @@ const server = serve({
     "/*": index,
 
     "/api/transcribe": { POST: handleTranscribe },
+    "/api/summarize": { POST: handleSummarize },
 
     "/api/hello": {
       GET() {
