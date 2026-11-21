@@ -6,6 +6,7 @@ import {
   ChevronDownIcon,
   FileTextIcon,
   FlagIcon,
+  LoaderCircleIcon,
   MicIcon,
   PlusIcon,
   SquareIcon,
@@ -312,9 +313,13 @@ function NewReport({
 }) {
   const [vorgangstyp, setVorgangstyp] = useState<string | null>(initialReport?.vorgangstyp ?? null);
   const [transcript, setTranscript] = useState("");
-  const dictation = useDictation((spoken) =>
-    setTranscript((current) => [current, spoken].filter(Boolean).join(" ")),
-  );
+  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [finishAfterProcessing, setFinishAfterProcessing] = useState(false);
+  const dictation = useDictation((spoken) => {
+    // Set in the same render as the new transcript so finishing can't run before the summary starts.
+    if (spoken) setIsSummarizing(true);
+    setTranscript((current) => [current, spoken].filter(Boolean).join(" "));
+  });
   const isRecording = dictation.status === "recording";
   const [manualText, setManualText] = useState("");
   const [showMetadata, setShowMetadata] = useState(false);
@@ -323,7 +328,6 @@ function NewReport({
   const [priority, setPriority] = useState(initialReport?.priority ?? DEFAULT_PRIORITY);
   const [attachments, setAttachments] = useState<string[]>(initialReport?.attachments ?? []);
   const [summary, setSummary] = useState<ReportSummary | null>(null);
-  const [isSummarizing, setIsSummarizing] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
 
   // Every new transcript is summarized; the AI suggestions prefill the metadata.
@@ -367,6 +371,22 @@ function NewReport({
       vorgangstyp,
       attachments,
     });
+
+  const handleContinue = () => {
+    if (!isRecording) {
+      finish();
+      return;
+    }
+    setFinishAfterProcessing(true);
+    dictation.stop();
+  };
+
+  // Opens the details once a stopped recording is transcribed and summarized.
+  useEffect(() => {
+    if (!finishAfterProcessing || isRecording || isBusy) return;
+    setFinishAfterProcessing(false);
+    if (!dictation.error) finish();
+  }, [finishAfterProcessing, isRecording, isBusy, dictation.error, finish]);
 
   return (
     <div className="flex flex-1 flex-col gap-6">
@@ -468,8 +488,8 @@ function NewReport({
         <Button variant="ghost" size="lg" onClick={onCancel}>
           Abbrechen
         </Button>
-        <Button size="lg" disabled={isBusy} onClick={finish}>
-          Weiter
+        <Button size="lg" disabled={isBusy || finishAfterProcessing} onClick={handleContinue}>
+          {finishAfterProcessing ? <LoaderCircleIcon className="animate-spin" /> : "Weiter"}
         </Button>
       </StickyActionBar>
     </div>
