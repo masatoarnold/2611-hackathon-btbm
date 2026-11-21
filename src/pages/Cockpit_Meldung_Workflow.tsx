@@ -57,6 +57,7 @@ import { Marker, MarkerContent, MarkerIcon } from "@/components/ui/marker";
 import { Message, MessageContent } from "@/components/ui/message";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { alsWordHerunterladen, inNeuemFensterOeffnen } from "@/lib/export";
 
 // Mock-Daten (fiktives Projekt Wohnanlage Lindenhof, Haus B), bis die Anbindung steht
 const SUBUNTERNEHMER = [
@@ -157,13 +158,18 @@ const DOKUMENT_ENTWUERFE: Record<string, string> = {
 const TRANSKRIPT_MOCK =
   "Der Betonlieferant hat gerade angerufen. Die Lieferung von 10 t verspätet sich um etwa zwei Stunden.\n\nGrund laut Lieferant: Verkehrsbehinderung auf der Zufahrt zur Baustelle.\n\nIch habe die Betonpumpe in Abschnitt B vorsorglich umdisponiert und den Subunternehmer Tiefbau informiert.";
 
-const CHAT_VERLAUF: {
+type ChatNachricht = {
   id: string;
   rolle: "ki" | "nutzer";
   text: string;
   aktion?: string;
   hatAenderungsAktion?: boolean;
-}[] = [
+};
+
+const KI_ANTWORT_MOCK =
+  "Verstanden. Ich habe den Entwurf entsprechend angepasst. Bitte prüfe die Stelle, bevor du das Dokument versendest.";
+
+const CHAT_VERLAUF: ChatNachricht[] = [
   {
     id: "1",
     rolle: "ki",
@@ -208,6 +214,14 @@ type BetroffenerVertrag = {
 };
 
 const dateiTab = (name: string): Tab => ({ id: `datei:${name}`, title: name, typ: "datei" });
+
+/** The text shown in a tab, used for the PDF and Word export. */
+function textVonTab(tab: Tab | undefined) {
+  if (!tab) return "";
+  if (tab.typ === "dokument") return tab.inhalt ?? "";
+  if (tab.typ === "transkript") return TRANSKRIPT_MOCK;
+  return DATEI_VORSCHAU[tab.title] ?? VERTRAGS_VORSCHAU[tab.title] ?? "";
+}
 
 export function CockpitMeldungWorkflow() {
   const [zusammenfassung, setZusammenfassung] = useState(ZUSAMMENFASSUNG_MOCK);
@@ -260,6 +274,26 @@ export function CockpitMeldungWorkflow() {
 
   const aktuellerTab = tabs.find((tab) => tab.id === aktiverTab);
   const mailText = aktuellerTab?.typ === "dokument" && aktuellerTab.inhalt ? aktuellerTab.inhalt : "";
+  const exportTitel = aktuellerTab?.title ?? "";
+  const exportText = textVonTab(aktuellerTab);
+
+  const [chatVerlauf, setChatVerlauf] = useState<ChatNachricht[]>(CHAT_VERLAUF);
+  const [chatEingabe, setChatEingabe] = useState("");
+
+  const nachrichtSenden = () => {
+    const text = chatEingabe.trim();
+    if (!text) return;
+    setChatVerlauf((aktuell) => [...aktuell, { id: crypto.randomUUID(), rolle: "nutzer", text }]);
+    setChatEingabe("");
+    setTimeout(
+      () =>
+        setChatVerlauf((aktuell) => [
+          ...aktuell,
+          { id: crypto.randomUUID(), rolle: "ki", text: KI_ANTWORT_MOCK },
+        ]),
+      600,
+    );
+  };
 
   return (
     <div className="grid h-screen grid-cols-[5fr_5fr_3fr] gap-4 bg-background p-4 text-foreground">
@@ -351,7 +385,12 @@ export function CockpitMeldungWorkflow() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                  <AlertDialogAction variant="destructive">Löschen</AlertDialogAction>
+                  <AlertDialogAction
+                    variant="destructive"
+                    onClick={() => window.location.assign("/cockpit")}
+                  >
+                    Löschen
+                  </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
@@ -472,8 +511,20 @@ export function CockpitMeldungWorkflow() {
           )}
         </CardContent>
         <CardFooter className="gap-2">
-          <Button variant="outline">PDF</Button>
-          <Button variant="outline">Word</Button>
+          <Button
+            variant="outline"
+            disabled={!exportText}
+            onClick={() => inNeuemFensterOeffnen(exportTitel, exportText, true)}
+          >
+            PDF
+          </Button>
+          <Button
+            variant="outline"
+            disabled={!exportText}
+            onClick={() => alsWordHerunterladen(exportTitel, exportText)}
+          >
+            Word
+          </Button>
           <Button variant="outline" onClick={() => setMailOffen(true)}>
             <MailIcon />
             Mail
@@ -488,7 +539,7 @@ export function CockpitMeldungWorkflow() {
         </CardHeader>
         <CardContent className="flex min-h-0 flex-1 flex-col gap-3">
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
-            {CHAT_VERLAUF.map((nachricht) => {
+            {chatVerlauf.map((nachricht) => {
               const istKi = nachricht.rolle === "ki";
               return (
                 <Fragment key={nachricht.id}>
@@ -536,8 +587,24 @@ export function CockpitMeldungWorkflow() {
             })}
           </div>
           <div className="flex items-end gap-2">
-            <Textarea placeholder="Nachricht an die KI" className="flex-1" />
-            <Button size="icon" aria-label="Senden">
+            <Textarea
+              placeholder="Nachricht an die KI"
+              className="flex-1"
+              value={chatEingabe}
+              onChange={(event) => setChatEingabe(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  nachrichtSenden();
+                }
+              }}
+            />
+            <Button
+              size="icon"
+              aria-label="Senden"
+              disabled={!chatEingabe.trim()}
+              onClick={nachrichtSenden}
+            >
               <SendIcon />
             </Button>
           </div>
@@ -695,12 +762,6 @@ function MailEntwurf({
   const [nachricht, setNachricht] = useState(initialNachricht);
   const [gesendet, setGesendet] = useState(false);
 
-  const zuruecksetzen = () => {
-    setEmpfaenger(initialEmpfaenger);
-    setBetreff(initialBetreff);
-    setNachricht(initialNachricht);
-  };
-
   if (gesendet) {
     return (
       <>
@@ -760,15 +821,9 @@ function MailEntwurf({
         </div>
       </div>
       <DialogFooter className="sm:justify-between">
-        <div className="flex gap-2">
-          <Button variant="ghost" onClick={onWechsleDienst}>
-            Dienst wechseln
-          </Button>
-          <Button variant="ghost" onClick={zuruecksetzen}>
-            <RotateCcwIcon />
-            Zurücksetzen
-          </Button>
-        </div>
+        <Button variant="ghost" onClick={onWechsleDienst}>
+          Dienst wechseln
+        </Button>
         <div className="flex gap-2">
           <Button variant="outline" onClick={onSchliessen}>
             Abbrechen
