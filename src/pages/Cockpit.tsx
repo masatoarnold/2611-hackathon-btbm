@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -387,22 +388,24 @@ export function Cockpit() {
               {anstehend.length} anstehend · {abgeschlossen.length} abgeschlossen
             </span>
           </CardHeader>
-          <CardContent className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto">
-            <MeldungsListe
-              ueberschrift="Anstehend"
-              meldungen={anstehend}
-              aufgeklappteId={aufgeklappteMeldungId}
-              onToggle={toggleMeldung}
-              onErledigt={meldungErledigen}
-              onAblehnen={meldungAblehnen}
-            />
-            <MeldungsListe
-              ueberschrift="Abgeschlossen"
-              meldungen={abgeschlossen}
-              aufgeklappteId={aufgeklappteMeldungId}
-              onToggle={toggleMeldung}
-            />
-          </CardContent>
+          <ScrollArea className="min-h-0 flex-1">
+            <CardContent className="flex flex-col gap-6">
+              <MeldungsListe
+                ueberschrift="Anstehend"
+                meldungen={anstehend}
+                aufgeklappteId={aufgeklappteMeldungId}
+                onToggle={toggleMeldung}
+                onErledigt={meldungErledigen}
+                onAblehnen={meldungAblehnen}
+              />
+              <MeldungsListe
+                ueberschrift="Abgeschlossen"
+                meldungen={abgeschlossen}
+                aufgeklappteId={aufgeklappteMeldungId}
+                onToggle={toggleMeldung}
+              />
+            </CardContent>
+          </ScrollArea>
         </Card>
 
         <div className="flex min-h-0 flex-col gap-4">
@@ -415,19 +418,21 @@ export function Cockpit() {
                   {TAGESBERICHT.projekt}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="flex min-h-0 flex-1 flex-col overflow-y-auto text-sm text-muted-foreground">
-                {berichtBearbeiten ? (
-                  <Textarea
-                    autoFocus
-                    aria-label="Tagesbericht bearbeiten"
-                    value={berichtText}
-                    onChange={(event) => setBerichtText(event.target.value)}
-                    className="min-h-0 flex-1 resize-none field-sizing-fixed"
-                  />
-                ) : (
-                  berichtText
-                )}
-              </CardContent>
+              <ScrollArea className="min-h-0 flex-1">
+                <CardContent className="flex flex-col text-sm text-muted-foreground">
+                  {berichtBearbeiten ? (
+                    <Textarea
+                      autoFocus
+                      aria-label="Tagesbericht bearbeiten"
+                      value={berichtText}
+                      onChange={(event) => setBerichtText(event.target.value)}
+                      className="min-h-28 resize-none field-sizing-fixed"
+                    />
+                  ) : (
+                    berichtText
+                  )}
+                </CardContent>
+              </ScrollArea>
               <CardContent className="flex justify-end gap-1">
                 <Button
                   variant="outline"
@@ -478,30 +483,32 @@ export function Cockpit() {
                     <PlusIcon />
                   </Button>
                 </CardHeader>
-                <CardContent className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-2">
-                  {neuerEintragOffen && (
-                    <NeuerEintrag
-                      platzhalter={planTab === "termine" ? "Neuer Termin" : "Neue Aufgabe"}
-                      onHinzufuegen={eintragHinzufuegen}
-                      onAbbrechen={() => setNeuerEintragOffen(false)}
-                    />
-                  )}
-                  <TabsContent value="termine" className="flex flex-col gap-2">
-                    {termine.map(({ id, titel }) => (
-                      <div key={id} className="rounded-xl bg-background p-3 text-sm">
-                        {titel}
-                      </div>
-                    ))}
-                  </TabsContent>
-                  <TabsContent value="aufgaben">
-                    <AufgabenListe
-                      aufgaben={aufgaben}
-                      onEntfernen={(id) =>
-                        setAufgaben((aktuell) => aktuell.filter((aufgabe) => aufgabe.id !== id))
-                      }
-                    />
-                  </TabsContent>
-                </CardContent>
+                <ScrollArea className="min-h-0 flex-1">
+                  <CardContent className="flex flex-col gap-2">
+                    {neuerEintragOffen && (
+                      <NeuerEintrag
+                        platzhalter={planTab === "termine" ? "Neuer Termin" : "Neue Aufgabe"}
+                        onHinzufuegen={eintragHinzufuegen}
+                        onAbbrechen={() => setNeuerEintragOffen(false)}
+                      />
+                    )}
+                    <TabsContent value="termine" className="flex flex-col gap-2">
+                      {termine.map(({ id, titel }) => (
+                        <div key={id} className="rounded-xl bg-background p-3 text-sm">
+                          {titel}
+                        </div>
+                      ))}
+                    </TabsContent>
+                    <TabsContent value="aufgaben">
+                      <AufgabenListe
+                        aufgaben={aufgaben}
+                        onEntfernen={(id) =>
+                          setAufgaben((aktuell) => aktuell.filter((aufgabe) => aufgabe.id !== id))
+                        }
+                      />
+                    </TabsContent>
+                  </CardContent>
+                </ScrollArea>
               </Tabs>
             </Card>
           </div>
@@ -554,30 +561,32 @@ export function Cockpit() {
                         </Select>
                       </div>
                       <div className="flex min-h-0 flex-1 flex-col gap-2">
-                      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-3">
-                        {lieferanten.map(({ id, titel, beschreibung }) => (
-                          <button
-                            key={id}
-                            type="button"
-                            onClick={() => setAusgewaehlterLieferantId(id)}
-                            className={`flex h-14 shrink-0 items-start justify-between gap-2 rounded-lg bg-background px-3 py-2 text-left ${
-                              ausgewaehlterLieferantId === id ? "ring-2 ring-inset ring-primary" : ""
-                            }`}
-                          >
-                            <div className="flex flex-col">
-                              <span className="text-sm">{titel}</span>
-                              {beschreibung && (
-                                <span className="text-xs text-muted-foreground">
-                                  {beschreibung}
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex size-8 shrink-0 items-center justify-center rounded-md border">
-                              <FileTextIcon className="size-5 text-muted-foreground" />
-                            </div>
-                          </button>
-                        ))}
-                      </div>
+                      <ScrollArea className="min-h-0 flex-1">
+                        <div className="flex flex-col gap-2 pr-3">
+                          {lieferanten.map(({ id, titel, beschreibung }) => (
+                            <button
+                              key={id}
+                              type="button"
+                              onClick={() => setAusgewaehlterLieferantId(id)}
+                              className={`flex h-14 shrink-0 items-start justify-between gap-2 rounded-lg bg-background px-3 py-2 text-left ${
+                                ausgewaehlterLieferantId === id ? "ring-2 ring-inset ring-primary" : ""
+                              }`}
+                            >
+                              <div className="flex flex-col">
+                                <span className="text-sm">{titel}</span>
+                                {beschreibung && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {beschreibung}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex size-8 shrink-0 items-center justify-center rounded-md border">
+                                <FileTextIcon className="size-5 text-muted-foreground" />
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </ScrollArea>
                       <Separator />
                       <div className="flex justify-center">
                         <Button
@@ -598,7 +607,8 @@ export function Cockpit() {
                       </div>
                       </div>
                     </div>
-                    <div className="flex min-h-0 flex-col gap-2 overflow-y-auto rounded-xl bg-background p-3">
+                    <ScrollArea className="h-full min-h-0 rounded-xl bg-background">
+                    <div className="flex flex-col gap-2 p-3">
                       <span className="text-sm">Vorschau</span>
                       {ausgewaehlterLieferant && (
                         <>
@@ -609,6 +619,7 @@ export function Cockpit() {
                         </>
                       )}
                     </div>
+                    </ScrollArea>
                 </TabsContent>
                 <TabsContent value="bauplaene" className="flex flex-col gap-2">
                   {BAUPLAENE_MOCK.map(({ id, titel, status }) => (

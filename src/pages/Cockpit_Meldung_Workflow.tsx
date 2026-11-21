@@ -68,6 +68,7 @@ import {
 import { Marker, MarkerContent, MarkerIcon } from "@/components/ui/marker";
 import { Message, MessageContent } from "@/components/ui/message";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { alsPdfHerunterladen, alsWordHerunterladen } from "@/lib/export";
 
@@ -390,61 +391,63 @@ export function CockpitMeldungWorkflow() {
               </Button>
             </CardAction>
           </CardHeader>
-          <CardContent className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
-            <section className="flex flex-col gap-2">
-              <h3 className="text-xs font-medium">Zusammenfassung</h3>
-              <Textarea
-                aria-label="Zusammenfassung"
-                className="min-h-32"
-                value={zusammenfassung}
-                onChange={(event) => setZusammenfassung(event.target.value)}
-              />
-            </section>
+          <ScrollArea className="min-h-0 flex-1">
+            <CardContent className="flex flex-col gap-4">
+              <section className="flex flex-col gap-2">
+                <h3 className="text-xs font-medium">Zusammenfassung</h3>
+                <Textarea
+                  aria-label="Zusammenfassung"
+                  className="min-h-32"
+                  value={zusammenfassung}
+                  onChange={(event) => setZusammenfassung(event.target.value)}
+                />
+              </section>
 
-            <section className="flex flex-col gap-2">
-              <h3 className="text-xs font-medium">Bilder</h3>
-              <ul className="grid grid-cols-2 gap-2">
-                {BILDER.map((bild) => (
-                  <li key={bild}>
-                    <button
-                      type="button"
-                      aria-label={`${bild} öffnen`}
-                      onClick={() => oeffneTab(dateiTab(bild))}
-                      className="flex w-full flex-col gap-1 rounded-md border p-1 text-left hover:bg-muted"
-                    >
-                      <div className="flex aspect-video w-full items-center justify-center rounded-sm bg-muted text-muted-foreground">
-                        <ImageIcon />
-                      </div>
-                      <span className="truncate px-1 text-xs">{bild}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </section>
+              <section className="flex flex-col gap-2">
+                <h3 className="text-xs font-medium">Bilder</h3>
+                <ul className="grid grid-cols-2 gap-2">
+                  {BILDER.map((bild) => (
+                    <li key={bild}>
+                      <button
+                        type="button"
+                        aria-label={`${bild} öffnen`}
+                        onClick={() => oeffneTab(dateiTab(bild))}
+                        className="flex w-full flex-col gap-1 rounded-md border p-1 text-left hover:bg-muted"
+                      >
+                        <div className="flex aspect-video w-full items-center justify-center rounded-sm bg-muted text-muted-foreground">
+                          <ImageIcon />
+                        </div>
+                        <span className="truncate px-1 text-xs">{bild}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
 
-            <section className="flex flex-col gap-2">
-              <h3 className="text-xs font-medium">Anhänge</h3>
-              <ul className="flex flex-col gap-2">
-                {ANHAENGE.map((anhang) => (
-                  <li key={anhang.name}>
-                    <Attachment size="sm" className="w-full">
-                      <AttachmentMedia>
-                        <PaperclipIcon />
-                      </AttachmentMedia>
-                      <AttachmentContent>
-                        <AttachmentTitle>{anhang.name}</AttachmentTitle>
-                        <AttachmentDescription>{anhang.beschreibung}</AttachmentDescription>
-                      </AttachmentContent>
-                      <AttachmentTrigger
-                        aria-label={`${anhang.name} öffnen`}
-                        onClick={() => oeffneTab(dateiTab(anhang.name))}
-                      />
-                    </Attachment>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          </CardContent>
+              <section className="flex flex-col gap-2">
+                <h3 className="text-xs font-medium">Anhänge</h3>
+                <ul className="flex flex-col gap-2">
+                  {ANHAENGE.map((anhang) => (
+                    <li key={anhang.name}>
+                      <Attachment size="sm" className="w-full">
+                        <AttachmentMedia>
+                          <PaperclipIcon />
+                        </AttachmentMedia>
+                        <AttachmentContent>
+                          <AttachmentTitle>{anhang.name}</AttachmentTitle>
+                          <AttachmentDescription>{anhang.beschreibung}</AttachmentDescription>
+                        </AttachmentContent>
+                        <AttachmentTrigger
+                          aria-label={`${anhang.name} öffnen`}
+                          onClick={() => oeffneTab(dateiTab(anhang.name))}
+                        />
+                      </Attachment>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            </CardContent>
+          </ScrollArea>
           <CardFooter className="gap-2">
             <Button
               variant="outline"
@@ -517,24 +520,26 @@ export function CockpitMeldungWorkflow() {
               {keywordsLaden ? "Keywords werden erstellt …" : "Keywords vorschlagen"}
             </Button>
           </CardHeader>
-          <CardContent className="min-h-0 flex-1 overflow-y-auto">
-            <ul className="flex flex-col gap-2">
-              {gefilterteSubunternehmer.length === 0 && (
-                <li className="text-xs text-muted-foreground">Keine Verträge gefunden</li>
-              )}
-              {gefilterteSubunternehmer.map((unternehmer) => (
-                <li key={unternehmer.id}>
-                  <SubunternehmerEintrag
-                    name={unternehmer.name}
-                    vertraege={unternehmer.vertraege}
-                    betroffeneVertraege={betroffeneNamen}
-                    onToggleVertrag={(vertrag) => toggleVertrag(vertrag, unternehmer.name)}
-                    onOeffneVertrag={(vertrag) => oeffneTab(dateiTab(vertrag))}
-                  />
-                </li>
-              ))}
-            </ul>
-          </CardContent>
+          <ScrollArea className="min-h-0 flex-1">
+            <CardContent>
+              <ul className="flex flex-col gap-2">
+                {gefilterteSubunternehmer.length === 0 && (
+                  <li className="text-xs text-muted-foreground">Keine Verträge gefunden</li>
+                )}
+                {gefilterteSubunternehmer.map((unternehmer) => (
+                  <li key={unternehmer.id}>
+                    <SubunternehmerEintrag
+                      name={unternehmer.name}
+                      vertraege={unternehmer.vertraege}
+                      betroffeneVertraege={betroffeneNamen}
+                      onToggleVertrag={(vertrag) => toggleVertrag(vertrag, unternehmer.name)}
+                      onOeffneVertrag={(vertrag) => oeffneTab(dateiTab(vertrag))}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </ScrollArea>
         </Card>
       </div>
 
@@ -650,54 +655,56 @@ export function CockpitMeldungWorkflow() {
           <CardTitle>KI-Chat</CardTitle>
         </CardHeader>
         <CardContent className="flex min-h-0 flex-1 flex-col gap-3">
-          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
-            {chatVerlauf.map((nachricht) => {
-              const istKi = nachricht.rolle === "ki";
-              return (
-                <Fragment key={nachricht.id}>
-                  <Message align={istKi ? "start" : "end"}>
-                    <MessageContent>
-                      <div
-                        className={`max-w-[85%] rounded-lg px-3 py-2 ${
-                          istKi
-                            ? "self-start bg-muted"
-                            : "self-end bg-primary text-primary-foreground"
-                        }`}
-                      >
-                        {nachricht.text}
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="flex flex-col gap-4 pr-3">
+              {chatVerlauf.map((nachricht) => {
+                const istKi = nachricht.rolle === "ki";
+                return (
+                  <Fragment key={nachricht.id}>
+                    <Message align={istKi ? "start" : "end"}>
+                      <MessageContent>
+                        <div
+                          className={`max-w-[85%] rounded-lg px-3 py-2 ${
+                            istKi
+                              ? "self-start bg-muted"
+                              : "self-end bg-primary text-primary-foreground"
+                          }`}
+                        >
+                          {nachricht.text}
+                        </div>
+                      </MessageContent>
+                    </Message>
+                    {nachricht.aktion && (
+                      <div className="flex flex-col gap-2">
+                        <Marker>
+                          <MarkerIcon>
+                            <FileTextIcon />
+                          </MarkerIcon>
+                          <MarkerContent>{nachricht.aktion}</MarkerContent>
+                        </Marker>
+                        {nachricht.hatAenderungsAktion && (
+                          <>
+                            <Marker>
+                              <MarkerIcon>
+                                <CheckIcon />
+                              </MarkerIcon>
+                              <MarkerContent>Änderung übernehmen</MarkerContent>
+                            </Marker>
+                            <Marker>
+                              <MarkerIcon>
+                                <RotateCcwIcon />
+                              </MarkerIcon>
+                              <MarkerContent>Änderung verwerfen</MarkerContent>
+                            </Marker>
+                          </>
+                        )}
                       </div>
-                    </MessageContent>
-                  </Message>
-                  {nachricht.aktion && (
-                    <div className="flex flex-col gap-2">
-                      <Marker>
-                        <MarkerIcon>
-                          <FileTextIcon />
-                        </MarkerIcon>
-                        <MarkerContent>{nachricht.aktion}</MarkerContent>
-                      </Marker>
-                      {nachricht.hatAenderungsAktion && (
-                        <>
-                          <Marker>
-                            <MarkerIcon>
-                              <CheckIcon />
-                            </MarkerIcon>
-                            <MarkerContent>Änderung übernehmen</MarkerContent>
-                          </Marker>
-                          <Marker>
-                            <MarkerIcon>
-                              <RotateCcwIcon />
-                            </MarkerIcon>
-                            <MarkerContent>Änderung verwerfen</MarkerContent>
-                          </Marker>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </Fragment>
-              );
-            })}
-          </div>
+                    )}
+                  </Fragment>
+                );
+              })}
+            </div>
+          </ScrollArea>
           <div className="flex items-end gap-2">
             <Textarea
               placeholder="Nachricht an die KI"
