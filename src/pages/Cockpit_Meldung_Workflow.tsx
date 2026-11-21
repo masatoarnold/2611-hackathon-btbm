@@ -25,6 +25,7 @@ import { Item, ItemContent, ItemTitle } from "@/components/ui/item";
 import { Message, MessageContent } from "@/components/ui/message";
 import { Marker, MarkerContent, MarkerIcon } from "@/components/ui/marker";
 import { Textarea } from "@/components/ui/textarea";
+import { sendChat } from "@/lib/chat";
 
 // Platzhalterdaten, bis die Anbindung steht
 const SUBUNTERNEHMER = [
@@ -41,34 +42,62 @@ const ANHAENGE = ["Lieferschein_Beton.pdf", "Foto_Lieferverzug.jpg"];
 const ZUSAMMENFASSUNG_PLATZHALTER =
   "Zusammenfassung des Vorfalls wird hier angezeigt. Dieser Text ist ein Platzhalter und wird später durch die KI-gestützte Auswertung der Meldung ersetzt.";
 
-const CHAT_VERLAUF: {
+const VORFALL_TITEL = "Lieferverspätung";
+
+type ChatNachricht = {
   id: string;
   rolle: "ki" | "nutzer";
   text: string;
   aktion?: string;
   hatAenderungsAktion?: boolean;
-}[] = [
-  {
-    id: "1",
-    rolle: "ki",
-    text: "Ich habe die Meldung ausgewertet und den Bautagesbericht vorbereitet. Womit soll ich ihn ergänzen?",
-  },
-  {
-    id: "2",
-    rolle: "nutzer",
-    text: "Ergänze bei den Maßnahmen, dass der Subunternehmer Tiefbau informiert wurde.",
-  },
-  {
-    id: "3",
-    rolle: "ki",
-    text: "Erledigt. Ich habe den Absatz „Maßnahmen“ angepasst. Die Änderung ist im Bericht markiert und kann übernommen werden.",
-    aktion: "KI hat Absatz „Maßnahmen“ im Bericht angepasst",
-    hatAenderungsAktion: true,
-  },
-];
+};
+
+const CHAT_BEGRUESSUNG: ChatNachricht = {
+  id: "begruessung",
+  rolle: "ki",
+  text: "Ich habe die Meldung ausgewertet und den Bautagesbericht vorbereitet. Womit soll ich ihn ergänzen?",
+};
+
+/** Turns the visible chat into API messages; the API must start with a user turn. */
+function alsApiNachrichten(verlauf: ChatNachricht[]) {
+  const ersteNutzerNachricht = verlauf.findIndex(({ rolle }) => rolle === "nutzer");
+  return verlauf.slice(ersteNutzerNachricht).map(({ rolle, text }) => ({
+    role: rolle === "ki" ? ("assistant" as const) : ("user" as const),
+    content: text,
+  }));
+}
 
 export function CockpitMeldungWorkflow() {
   const [zusammenfassung, setZusammenfassung] = useState(ZUSAMMENFASSUNG_PLATZHALTER);
+  const [chatVerlauf, setChatVerlauf] = useState<ChatNachricht[]>([CHAT_BEGRUESSUNG]);
+  const [chatEingabe, setChatEingabe] = useState("");
+  const [kiAntwortet, setKiAntwortet] = useState(false);
+  const [chatFehler, setChatFehler] = useState<string | null>(null);
+
+  async function nachrichtSenden() {
+    const text = chatEingabe.trim();
+    if (!text || kiAntwortet) return;
+
+    const verlauf = [...chatVerlauf, { id: crypto.randomUUID(), rolle: "nutzer" as const, text }];
+    setChatVerlauf(verlauf);
+    setChatEingabe("");
+    setChatFehler(null);
+    setKiAntwortet(true);
+    try {
+      const antwort = await sendChat({
+        vorfall: { titel: VORFALL_TITEL, zusammenfassung },
+        messages: alsApiNachrichten(verlauf),
+      });
+      setChatVerlauf((aktuell) => [
+        ...aktuell,
+        { id: crypto.randomUUID(), rolle: "ki", text: antwort },
+      ]);
+    } catch (error) {
+      setChatFehler(error instanceof Error ? error.message : "KI-Antwort fehlgeschlagen.");
+    } finally {
+      setKiAntwortet(false);
+    }
+  }
 
   const [ausgewaehlterSubunternehmer, setAusgewaehlterSubunternehmer] = useState<string | null>(
     null,
@@ -80,7 +109,7 @@ export function CockpitMeldungWorkflow() {
       <div className="grid min-h-0 grid-rows-[3fr_2fr] gap-4">
         <Card className="min-h-0">
           <CardHeader>
-            <CardTitle>Incident: Lieferverspätung</CardTitle>
+            <CardTitle>Incident: {VORFALL_TITEL}</CardTitle>
           </CardHeader>
           <CardContent className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
             <section className="flex flex-col gap-2">
@@ -208,7 +237,7 @@ export function CockpitMeldungWorkflow() {
         </CardHeader>
         <CardContent className="flex min-h-0 flex-1 flex-col gap-3">
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
-            {CHAT_VERLAUF.map((nachricht) => {
+            {chatVerlauf.map((nachricht) => {
               const istKi = nachricht.rolle === "ki";
               return (
                 <Fragment key={nachricht.id}>
@@ -221,7 +250,7 @@ export function CockpitMeldungWorkflow() {
                             : "self-end bg-primary text-primary-foreground"
                         }`}
                       >
-                        {nachricht.text}
+                        <p className="whitespace-pre-wrap">{nachricht.text}</p>
                       </div>
                     </MessageContent>
                   </Message>
@@ -254,13 +283,37 @@ export function CockpitMeldungWorkflow() {
                 </Fragment>
               );
             })}
+            {kiAntwortet && <p className="text-xs text-muted-foreground">KI schreibt…</p>}
+            {chatFehler && <p className="text-xs text-destructive">{chatFehler}</p>}
           </div>
-          <div className="flex items-end gap-2">
-            <Textarea placeholder="Nachricht an die KI" className="flex-1" />
-            <Button size="icon" aria-label="Senden">
+          <form
+            className="flex items-end gap-2"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void nachrichtSenden();
+            }}
+          >
+            <Textarea
+              placeholder="Nachricht an die KI"
+              className="flex-1"
+              value={chatEingabe}
+              onChange={(event) => setChatEingabe(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  void nachrichtSenden();
+                }
+              }}
+            />
+            <Button
+              type="submit"
+              size="icon"
+              aria-label="Senden"
+              disabled={kiAntwortet || !chatEingabe.trim()}
+            >
               <SendIcon />
             </Button>
-          </div>
+          </form>
         </CardContent>
       </Card>
     </div>
