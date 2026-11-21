@@ -130,9 +130,14 @@ const BAUPLAENE_MOCK = [
   { id: "b-4", titel: "Abdichtungsdetail Kellerwand", status: "in Prüfung" },
 ];
 
+/** Round, tinted icon buttons: green confirms, red removes. */
+const ICON_GRUEN = "bg-green-100 text-green-700 hover:bg-green-200 hover:text-green-800";
+const ICON_GRUEN_AKTIV = "bg-green-600 text-white hover:bg-green-700 hover:text-white";
+const ICON_ROT = "bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700";
+
 function ListenEintrag({ titel, status }: { titel: string; status: string }) {
   return (
-    <div className="flex items-center justify-between gap-2 rounded-md border p-2 text-sm">
+    <div className="flex items-center justify-between gap-2 rounded-xl bg-background p-3 text-sm">
       <span>{titel}</span>
       <span className="shrink-0 text-xs text-muted-foreground">{status}</span>
     </div>
@@ -162,7 +167,7 @@ function MeldungsListe({
   const mitAktionen = Boolean(onErledigt && onAblehnen);
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="text-sm font-medium">{ueberschrift}</h2>
+      <h2 className="text-sm font-semibold text-primary">{ueberschrift}</h2>
       <Separator />
       {meldungen.length === 0 && (
         <p className="text-sm text-muted-foreground">Keine Meldungen.</p>
@@ -171,9 +176,18 @@ function MeldungsListe({
         const { id, titel, beschreibung } = meldung;
         const aufgeklappt = aufgeklappteId === id;
         return (
-          <div key={id} className="flex flex-col gap-3 rounded-md border p-3">
+          <div key={id} className="flex flex-col gap-3 rounded-xl bg-background p-3.5">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-sm">{titel}</span>
+              <button
+                type="button"
+                className={`min-w-0 flex-1 text-left text-sm hover:underline ${
+                  mitAktionen ? "" : "text-muted-foreground"
+                }`}
+                aria-expanded={aufgeklappt}
+                onClick={() => onToggle(id)}
+              >
+                {titel}
+              </button>
               <Button
                 variant="ghost"
                 size="icon"
@@ -186,22 +200,24 @@ function MeldungsListe({
             </div>
             {aufgeklappt && (
               <>
-                <p className="min-h-32 text-sm text-muted-foreground">{beschreibung}</p>
+                <p className="text-sm text-muted-foreground">{beschreibung}</p>
                 <div className="flex justify-end gap-1">
                   {mitAktionen && (
                     <>
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="icon"
                         aria-label="Erledigt"
+                        className={ICON_GRUEN}
                         onClick={() => onErledigt?.(meldung)}
                       >
                         <CheckIcon />
                       </Button>
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="icon"
                         aria-label="Ablehnen"
+                        className={ICON_ROT}
                         onClick={() => onAblehnen?.(meldung)}
                       >
                         <XIcon />
@@ -262,24 +278,28 @@ function AufgabenListe({
   return (
     <div className="flex flex-col gap-2">
       {aufgaben.map(({ id, titel, erledigt }) => (
-        <div key={id} className="flex items-center justify-between gap-2 rounded-md border p-2">
-          <span className={`text-sm ${erledigt ? "text-muted-foreground line-through" : ""}`}>
+        <div key={id} className="flex items-center justify-between gap-2 rounded-xl bg-background p-2.5">
+          <span
+            className={`min-w-0 flex-1 text-sm hyphens-auto ${erledigt ? "text-muted-foreground line-through" : ""}`}
+          >
             {titel}
           </span>
-          <div className="flex gap-1">
+          <div className="flex shrink-0 gap-1.5">
             <Button
-              variant={erledigt ? "secondary" : "outline"}
+              variant="ghost"
               size="icon"
               aria-label={erledigt ? "Aufgabe wieder öffnen" : "Aufgabe erledigen"}
               aria-pressed={erledigt}
+              className={erledigt ? ICON_GRUEN_AKTIV : ICON_GRUEN}
               onClick={() => onErledigen(id)}
             >
               <CheckIcon />
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
               aria-label="Aufgabe löschen"
+              className={ICON_ROT}
               onClick={() => onLoeschen(id)}
             >
               <Trash2Icon />
@@ -378,22 +398,25 @@ export function Cockpit() {
 
   return (
     <div className="flex h-screen min-w-5xl flex-col overflow-hidden bg-background text-foreground">
-      <header className="flex h-12 items-center border-b px-6">
-        <h1 className="text-sm font-medium">Cockpit</h1>
+      <header className="flex h-12 items-center justify-between gap-4 border-b bg-card px-6">
+        <div className="flex items-baseline gap-3">
+          <h1 className="text-base font-semibold text-primary">Cockpit</h1>
+          <span className="text-xs text-muted-foreground">
+            {TAGESBERICHT.projekt} · {MELDUNGSDATUM}
+          </span>
+        </div>
+        <Button variant="outline" size="sm" asChild>
+          <a href="/satellite">Baustellen-App öffnen</a>
+        </Button>
       </header>
 
       <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-4 p-6">
         <Card className="min-h-0 overflow-hidden">
-          <CardHeader className="flex shrink-0 flex-wrap gap-2">
-            <Button variant="outline" size="sm">
-              Datum: {MELDUNGSDATUM}
-            </Button>
-            <Button variant="outline" size="sm">
-              Meldungen
-            </Button>
-            <Button variant="outline" size="sm">
-              Thema: Defekte
-            </Button>
+          <CardHeader className="flex shrink-0 flex-wrap items-center justify-between gap-2">
+            <CardTitle>Meldungen</CardTitle>
+            <span className="text-xs text-muted-foreground">
+              {anstehend.length} anstehend · {abgeschlossen.length} abgeschlossen
+            </span>
           </CardHeader>
           <CardContent className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto">
             <MeldungsListe
@@ -414,7 +437,7 @@ export function Cockpit() {
         </Card>
 
         <div className="flex min-h-0 flex-col gap-4">
-          <div className="grid h-64 shrink-0 grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4">
+          <div className="grid h-80 shrink-0 grid-cols-[minmax(0,5fr)_minmax(0,4fr)] gap-4">
             <Card className="min-h-0 overflow-hidden">
               <CardHeader>
                 <CardTitle>
@@ -496,7 +519,7 @@ export function Cockpit() {
                   )}
                   <TabsContent value="termine" className="flex flex-col gap-2">
                     {termine.map(({ id, titel }) => (
-                      <div key={id} className="rounded-md border p-2 text-sm">
+                      <div key={id} className="rounded-xl bg-background p-3 text-sm">
                         {titel}
                       </div>
                     ))}
@@ -568,8 +591,8 @@ export function Cockpit() {
                             key={id}
                             type="button"
                             onClick={() => setAusgewaehlterLieferantId(id)}
-                            className={`flex h-16 shrink-0 items-start justify-between gap-2 rounded-md border p-3 text-left ${
-                              ausgewaehlterLieferantId === id ? "border-primary" : ""
+                            className={`flex h-16 shrink-0 items-start justify-between gap-2 rounded-xl bg-background p-3.5 text-left ${
+                              ausgewaehlterLieferantId === id ? "ring-2 ring-primary" : ""
                             }`}
                           >
                             <div className="flex flex-col">
@@ -587,7 +610,7 @@ export function Cockpit() {
                         ))}
                       </div>
                     </div>
-                    <div className="flex min-h-0 flex-col gap-2 overflow-y-auto rounded-md border p-3">
+                    <div className="flex min-h-0 flex-col gap-2 overflow-y-auto rounded-xl bg-background p-3.5">
                       <span className="text-sm">Vorschau</span>
                       {ausgewaehlterLieferant && (
                         <>

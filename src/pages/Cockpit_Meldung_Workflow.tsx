@@ -1,5 +1,6 @@
 import { Fragment, useState } from "react";
 import {
+  ArrowLeftIcon,
   CheckIcon,
   ChevronDownIcon,
   FileTextIcon,
@@ -33,7 +34,14 @@ import {
   AttachmentTrigger,
 } from "@/components/ui/attachment";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
@@ -301,7 +309,15 @@ export function CockpitMeldungWorkflow() {
       <div className="grid min-h-0 grid-rows-[3fr_2fr] gap-4">
         <Card className="min-h-0">
           <CardHeader>
-            <CardTitle>Incident: Lieferverspätung</CardTitle>
+            <CardTitle>Vorfall: Lieferverspätung</CardTitle>
+            <CardAction>
+              <Button variant="ghost" size="sm" asChild>
+                <a href="/cockpit">
+                  <ArrowLeftIcon />
+                  Cockpit
+                </a>
+              </Button>
+            </CardAction>
           </CardHeader>
           <CardContent className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
             <section className="flex flex-col gap-2">
@@ -377,9 +393,9 @@ export function CockpitMeldungWorkflow() {
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Incident löschen?</AlertDialogTitle>
+                  <AlertDialogTitle>Vorfall löschen?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Möchtest du diesen Incident wirklich löschen? Diese Aktion kann nicht rückgängig
+                    Möchtest du diesen Vorfall wirklich löschen? Diese Aktion kann nicht rückgängig
                     gemacht werden.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
@@ -434,8 +450,9 @@ export function CockpitMeldungWorkflow() {
         </CardHeader>
         <CardContent className="flex min-h-0 flex-1 flex-col">
           {tabs.length === 0 ? (
-            <div className="flex min-h-0 flex-1 items-center justify-center rounded-md border bg-muted text-xs text-muted-foreground">
-              Keine Datei geöffnet
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1 rounded-md border bg-muted p-6 text-center text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">Keine Datei geöffnet</span>
+              Öffne links ein Bild, einen Anhang oder einen Vertrag, oder erstelle ein Dokument.
             </div>
           ) : (
             <Tabs
