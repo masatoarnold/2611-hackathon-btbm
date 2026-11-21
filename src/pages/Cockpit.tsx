@@ -1,13 +1,5 @@
 import { useRef, useState, type ChangeEvent } from "react";
-import {
-  CheckIcon,
-  EyeIcon,
-  FileTextIcon,
-  MailIcon,
-  PlusIcon,
-  Trash2Icon,
-  XIcon,
-} from "lucide-react";
+import { CheckIcon, EyeIcon, MailIcon, PlusIcon, XIcon } from "lucide-react";
 
 import { CockpitHeader } from "@/components/CockpitHeader";
 import { Button } from "@/components/ui/button";
@@ -32,6 +24,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { alsPdfHerunterladen, alsWordHerunterladen } from "@/lib/export";
 import { MailDialog } from "@/pages/Cockpit_Meldung_Workflow";
+import { Schedule } from "@/pages/Satellite";
 
 // Mock-Daten (fiktives Projekt Wohnanlage Lindenhof, Haus B), bis die Anbindung steht
 const MELDUNGSDATUM = "21.11.26";
@@ -93,19 +86,6 @@ const MELDUNGEN_ABGESCHLOSSEN_MOCK = [
     beschreibung:
       "Baubesprechung mit dem Bauherrn am 19.11.: Abdichtung Kellerwände und Grundwasserstand besprochen. Protokoll an alle Teilnehmer versendet.",
   },
-];
-
-const TERMINE_MOCK = [
-  { id: "t-1", titel: "Abstimmung Betonlieferant, 10:15" },
-  { id: "t-2", titel: "Baubesprechung Bauherr, 14:00" },
-  { id: "t-3", titel: "Abnahme Bewehrung Abschnitt C, Mo 07:30" },
-];
-
-const AUFGABEN_MOCK = [
-  { id: "a-1", titel: "Ersatzpumpe Abschnitt B bestätigen" },
-  { id: "a-2", titel: "Behinderungsanzeige Bewehrungspläne versenden" },
-  { id: "a-3", titel: "Lieferschein Beton gegenzeichnen" },
-  { id: "a-4", titel: "Winterbaumaßnahmen ab 29.11. planen" },
 ];
 
 const KEINE_AUSWAHL = "keine-auswahl";
@@ -270,100 +250,14 @@ function MeldungsListe({
   );
 }
 
-type Aufgabe = { id: string; titel: string };
-
-/** Green (erledigt) and red (verwerfen) both take the task off the list. */
-function AufgabenListe({
-  aufgaben,
-  onEntfernen,
-}: {
-  aufgaben: Aufgabe[];
-  onEntfernen: (id: string) => void;
-}) {
-  if (aufgaben.length === 0) {
-    return <p className="text-sm text-muted-foreground">Keine offenen Aufgaben.</p>;
-  }
-
-  return (
-    <div className="flex flex-col gap-2">
-      {aufgaben.map(({ id, titel }) => (
-        <div key={id} className="flex items-center justify-between gap-2 rounded-xl bg-background p-2.5">
-          <span className="min-w-0 flex-1 text-sm hyphens-auto">{titel}</span>
-          <div className="flex shrink-0 gap-1.5">
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Aufgabe erledigt"
-              className={ICON_GRUEN}
-              onClick={() => onEntfernen(id)}
-            >
-              <CheckIcon />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Aufgabe verwerfen"
-              className={ICON_ROT}
-              onClick={() => onEntfernen(id)}
-            >
-              <Trash2Icon />
-            </Button>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/** Input row shown when adding a Termin or an Aufgabe. */
-function NeuerEintrag({
-  platzhalter,
-  onHinzufuegen,
-  onAbbrechen,
-}: {
-  platzhalter: string;
-  onHinzufuegen: (titel: string) => void;
-  onAbbrechen: () => void;
-}) {
-  const [titel, setTitel] = useState("");
-  const hinzufuegen = () => {
-    if (titel.trim()) onHinzufuegen(titel.trim());
-  };
-
-  return (
-    <div className="flex gap-2">
-      <Input
-        autoFocus
-        value={titel}
-        placeholder={platzhalter}
-        aria-label={platzhalter}
-        onChange={(event) => setTitel(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") hinzufuegen();
-          if (event.key === "Escape") onAbbrechen();
-        }}
-      />
-      <Button variant="outline" size="icon" aria-label="Übernehmen" onClick={hinzufuegen}>
-        <CheckIcon />
-      </Button>
-    </div>
-  );
-}
-
 export function Cockpit() {
   const [aufgeklappteMeldungId, setAufgeklappteMeldungId] = useState<string | null>("m-1");
   const [aktivePhase, setAktivePhase] = useState(PHASEN[1] ?? "");
   const [aktivesGewerk, setAktivesGewerk] = useState(GEWERKE[1] ?? "");
-  const [ausgewaehlterLieferantId, setAusgewaehlterLieferantId] = useState<string | null>("l-1");
+  const [offenerVertragId, setOffenerVertragId] = useState<string | null>(null);
 
   const [anstehend, setAnstehend] = useState<Meldung[]>(MELDUNGEN_ANSTEHEND_MOCK);
   const [abgeschlossen, setAbgeschlossen] = useState<Meldung[]>(MELDUNGEN_ABGESCHLOSSEN_MOCK);
-  const [termine, setTermine] = useState(TERMINE_MOCK);
-  const [aufgaben, setAufgaben] = useState<Aufgabe[]>(() =>
-    AUFGABEN_MOCK,
-  );
-  const [planTab, setPlanTab] = useState("aufgaben");
-  const [neuerEintragOffen, setNeuerEintragOffen] = useState(false);
   const [berichtAbschnitte, setBerichtAbschnitte] = useState<BerichtAbschnitt[]>(
     TAGESBERICHT.abschnitte,
   );
@@ -386,29 +280,21 @@ export function Cockpit() {
   const meldungAblehnen = (meldung: Meldung) =>
     setAnstehend((aktuell) => aktuell.filter(({ id }) => id !== meldung.id));
 
-  const eintragHinzufuegen = (titel: string) => {
-    const id = crypto.randomUUID();
-    if (planTab === "termine") setTermine((aktuell) => [...aktuell, { id, titel }]);
-    else setAufgaben((aktuell) => [...aktuell, { id, titel }]);
-    setNeuerEintragOffen(false);
-  };
-
   const vertragHinzufuegen = (event: ChangeEvent<HTMLInputElement>) => {
     const datei = event.target.files?.[0];
     if (!datei) return;
     const id = crypto.randomUUID();
     setLieferanten((aktuell) => [...aktuell, { id, titel: datei.name, beschreibung: "Vertrag" }]);
-    setAusgewaehlterLieferantId(id);
     event.target.value = "";
   };
 
-  const ausgewaehlterLieferant = lieferanten.find(({ id }) => id === ausgewaehlterLieferantId);
+  const offenerVertrag = lieferanten.find(({ id }) => id === offenerVertragId);
 
   return (
     <div className="flex h-screen min-w-5xl flex-col overflow-hidden bg-background text-foreground">
       <CockpitHeader projekt={TAGESBERICHT.projekt} datum={MELDUNGSDATUM} />
 
-      <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-4 p-6">
+      <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,4fr)_minmax(0,6fr)_minmax(0,3fr)] gap-4 p-6">
         <Card className="min-h-0 overflow-hidden">
           <CardHeader className="flex shrink-0 flex-wrap items-center justify-between gap-2">
             <CardTitle>Meldungen</CardTitle>
@@ -437,77 +323,23 @@ export function Cockpit() {
         </Card>
 
         <div className="flex min-h-0 flex-col gap-4">
-          <div className="grid h-56 shrink-0 grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4">
-            <Card className="min-h-0 overflow-hidden">
-              <CardHeader>
-                <CardTitle>
-                  Tagesbericht {TAGESBERICHT.datum}
-                  <br />
-                  {TAGESBERICHT.projekt}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="min-h-0 flex-1 text-sm text-muted-foreground">
-                {TAGESBERICHT.zusammenfassung}
-              </CardContent>
-              <CardContent className="flex justify-end">
-                <Button variant="outline" onClick={() => setBerichtOffen(true)}>
-                  Bericht sehen
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="min-h-0 overflow-hidden">
-              <Tabs
-                value={planTab}
-                onValueChange={(tab) => {
-                  setPlanTab(tab);
-                  setNeuerEintragOffen(false);
-                }}
-                className="flex h-full min-h-0 flex-col gap-(--card-spacing)"
-              >
-                <CardHeader className="flex shrink-0 items-center justify-center gap-2">
-                  <TabsList className="w-auto">
-                    <TabsTrigger value="termine">Termine</TabsTrigger>
-                    <TabsTrigger value="aufgaben">Aufgaben</TabsTrigger>
-                  </TabsList>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    aria-label={planTab === "termine" ? "Termin hinzufügen" : "Aufgabe hinzufügen"}
-                    onClick={() => setNeuerEintragOffen(true)}
-                  >
-                    <PlusIcon />
-                  </Button>
-                </CardHeader>
-                <ScrollArea className="min-h-0 flex-1">
-                  <CardContent className="flex flex-col gap-2">
-                    {neuerEintragOffen && (
-                      <NeuerEintrag
-                        platzhalter={planTab === "termine" ? "Neuer Termin" : "Neue Aufgabe"}
-                        onHinzufuegen={eintragHinzufuegen}
-                        onAbbrechen={() => setNeuerEintragOffen(false)}
-                      />
-                    )}
-                    <TabsContent value="termine" className="flex flex-col gap-2">
-                      {termine.map(({ id, titel }) => (
-                        <div key={id} className="rounded-xl bg-background p-3 text-sm">
-                          {titel}
-                        </div>
-                      ))}
-                    </TabsContent>
-                    <TabsContent value="aufgaben">
-                      <AufgabenListe
-                        aufgaben={aufgaben}
-                        onEntfernen={(id) =>
-                          setAufgaben((aktuell) => aktuell.filter((aufgabe) => aufgabe.id !== id))
-                        }
-                      />
-                    </TabsContent>
-                  </CardContent>
-                </ScrollArea>
-              </Tabs>
-            </Card>
-          </div>
+          <Card className="h-56 shrink-0 overflow-hidden">
+            <CardHeader>
+              <CardTitle>
+                Tagesbericht {TAGESBERICHT.datum}
+                <br />
+                {TAGESBERICHT.projekt}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="min-h-0 flex-1 text-sm text-muted-foreground">
+              {TAGESBERICHT.zusammenfassung}
+            </CardContent>
+            <CardContent className="flex justify-end">
+              <Button variant="outline" onClick={() => setBerichtOffen(true)}>
+                Bericht sehen
+              </Button>
+            </CardContent>
+          </Card>
 
           <Card className="min-h-0 flex-1 overflow-hidden">
             <Tabs
@@ -524,7 +356,7 @@ export function Cockpit() {
               <CardContent className="min-h-0 flex-1 overflow-y-auto">
                 <TabsContent
                   value="vertraege"
-                  className="grid h-full min-h-0 grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4"
+                  className="flex h-full min-h-0 flex-col"
                 >
                     <div className="flex min-h-0 flex-col gap-3">
                       <div className="flex gap-2">
@@ -560,13 +392,9 @@ export function Cockpit() {
                       <ScrollArea className="min-h-0 flex-1">
                         <div className="flex flex-col gap-2 pr-3">
                           {lieferanten.map(({ id, titel, beschreibung }) => (
-                            <button
+                            <div
                               key={id}
-                              type="button"
-                              onClick={() => setAusgewaehlterLieferantId(id)}
-                              className={`flex h-14 shrink-0 items-start justify-between gap-2 rounded-lg bg-background px-3 py-2 text-left ${
-                                ausgewaehlterLieferantId === id ? "ring-2 ring-inset ring-primary" : ""
-                              }`}
+                              className="flex h-14 shrink-0 items-center justify-between gap-2 rounded-lg bg-background px-3 py-2"
                             >
                               <div className="flex flex-col">
                                 <span className="text-sm">{titel}</span>
@@ -576,10 +404,15 @@ export function Cockpit() {
                                   </span>
                                 )}
                               </div>
-                              <div className="flex size-8 shrink-0 items-center justify-center rounded-md border">
-                                <FileTextIcon className="size-5 text-muted-foreground" />
-                              </div>
-                            </button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label="Vertrag ansehen"
+                                onClick={() => setOffenerVertragId(id)}
+                              >
+                                <EyeIcon />
+                              </Button>
+                            </div>
                           ))}
                         </div>
                       </ScrollArea>
@@ -603,19 +436,6 @@ export function Cockpit() {
                       </div>
                       </div>
                     </div>
-                    <ScrollArea className="h-full min-h-0 rounded-xl bg-background">
-                    <div className="flex flex-col gap-2 p-3">
-                      <span className="text-sm">Vorschau</span>
-                      {ausgewaehlterLieferant && (
-                        <>
-                          <span className="text-xs font-medium">{ausgewaehlterLieferant.titel}</span>
-                          <span className="text-xs whitespace-pre-line text-muted-foreground">
-                            {ausgewaehlterLieferant.vorschau ?? ausgewaehlterLieferant.beschreibung}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                    </ScrollArea>
                 </TabsContent>
                 <TabsContent value="bauplaene" className="flex flex-col gap-2">
                   {BAUPLAENE_MOCK.map(({ id, titel, status }) => (
@@ -631,7 +451,39 @@ export function Cockpit() {
             </Tabs>
           </Card>
         </div>
+
+        <ScrollArea className="min-h-0">
+          <div className="pr-3 text-sm [&_[data-slot=item]]:gap-2 [&_[data-slot=item]]:p-2.5 [&_[data-slot=item-description]]:text-xs [&_li]:min-h-9 [&_ul]:gap-1.5 [&_h2]:text-sm [&>div]:gap-4">
+            <Schedule />
+          </div>
+        </ScrollArea>
       </main>
+
+      <Dialog
+        open={offenerVertrag !== undefined}
+        onOpenChange={(offen) => !offen && setOffenerVertragId(null)}
+      >
+        <DialogContent className="h-[calc(100vh-2rem)] grid-rows-[auto_minmax(0,1fr)] sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Vertrag</DialogTitle>
+          </DialogHeader>
+          {offenerVertrag && (
+            <ScrollArea className="min-h-0 rounded-xl bg-background">
+              <article className="flex flex-col gap-4 p-4">
+                <h1 className="text-lg font-semibold">{offenerVertrag.titel}</h1>
+                {offenerVertrag.beschreibung && (
+                  <h2 className="text-sm font-semibold text-primary">
+                    {offenerVertrag.beschreibung}
+                  </h2>
+                )}
+                <p className="text-sm whitespace-pre-line">
+                  {offenerVertrag.vorschau ?? "Keine Vorschau verfügbar."}
+                </p>
+              </article>
+            </ScrollArea>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={berichtOffen} onOpenChange={setBerichtOffen}>
         <DialogContent className="h-[calc(100vh-2rem)] grid-rows-[auto_minmax(0,1fr)_auto] sm:max-w-2xl">
