@@ -1,4 +1,4 @@
-A project that helps constructions site managers monitor construction sites.
+An AI-powered project that helps construction site managers by relating data inputs, especially audio-recorded reports, to timeline-deviations and task-dependencies. The other major component is the automized domain-specific documentation creation via AI. The detailed description is the CHALLENGE.md file.   
 
 UI built on shadcn components.
 
