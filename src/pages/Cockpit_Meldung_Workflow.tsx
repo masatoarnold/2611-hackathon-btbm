@@ -1,5 +1,13 @@
-import { useState } from "react";
-import { FileTextIcon, MailIcon, PaperclipIcon, SendIcon, Trash2Icon } from "lucide-react";
+import { Fragment, useState } from "react";
+import {
+  CheckIcon,
+  FileTextIcon,
+  MailIcon,
+  PaperclipIcon,
+  RotateCcwIcon,
+  SendIcon,
+  Trash2Icon,
+} from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,6 +22,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Item, ItemContent, ItemTitle } from "@/components/ui/item";
+import { Message, MessageContent } from "@/components/ui/message";
+import { Marker, MarkerContent, MarkerIcon } from "@/components/ui/marker";
 import { Textarea } from "@/components/ui/textarea";
 
 // Platzhalterdaten, bis die Anbindung steht
@@ -31,14 +41,38 @@ const ANHAENGE = ["Lieferschein_Beton.pdf", "Foto_Lieferverzug.jpg"];
 const ZUSAMMENFASSUNG_PLATZHALTER =
   "Zusammenfassung des Vorfalls wird hier angezeigt. Dieser Text ist ein Platzhalter und wird später durch die KI-gestützte Auswertung der Meldung ersetzt.";
 
-const TRANSKRIPT_MOCK =
-  "Der Betonlieferant hat gerade angerufen. Die Lieferung von 10 t verspätet sich um etwa zwei Stunden.\n\nGrund laut Lieferant: Verkehrsbehinderung auf der Zufahrt zur Baustelle.\n\nIch habe die Betonpumpe in Abschnitt B vorsorglich umdisponiert und den Subunternehmer Tiefbau informiert.";
+const CHAT_VERLAUF: {
+  id: string;
+  rolle: "ki" | "nutzer";
+  text: string;
+  aktion?: string;
+  hatAenderungsAktion?: boolean;
+}[] = [
+  {
+    id: "1",
+    rolle: "ki",
+    text: "Ich habe die Meldung ausgewertet und den Bautagesbericht vorbereitet. Womit soll ich ihn ergänzen?",
+  },
+  {
+    id: "2",
+    rolle: "nutzer",
+    text: "Ergänze bei den Maßnahmen, dass der Subunternehmer Tiefbau informiert wurde.",
+  },
+  {
+    id: "3",
+    rolle: "ki",
+    text: "Erledigt. Ich habe den Absatz „Maßnahmen“ angepasst. Die Änderung ist im Bericht markiert und kann übernommen werden.",
+    aktion: "KI hat Absatz „Maßnahmen“ im Bericht angepasst",
+    hatAenderungsAktion: true,
+  },
+];
 
 export function CockpitMeldungWorkflow() {
   const [zusammenfassung, setZusammenfassung] = useState(ZUSAMMENFASSUNG_PLATZHALTER);
-  const [zeigtTranskript, setZeigtTranskript] = useState(false);
-  const [ausgewaehlterSubunternehmer, setAusgewaehlterSubunternehmer] =
-    useState<string | null>(null);
+
+  const [ausgewaehlterSubunternehmer, setAusgewaehlterSubunternehmer] = useState<string | null>(
+    null,
+  );
 
   return (
     <div className="grid h-screen grid-cols-[5fr_5fr_3fr] gap-4 bg-background p-4 text-foreground">
@@ -90,14 +124,6 @@ export function CockpitMeldungWorkflow() {
             </section>
           </CardContent>
           <CardFooter className="gap-2">
-            <Button
-              variant={zeigtTranskript ? "default" : "outline"}
-              aria-pressed={zeigtTranskript}
-              onClick={() => setZeigtTranskript((current) => !current)}
-            >
-              <FileTextIcon />
-              Transkript
-            </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive">
@@ -109,8 +135,8 @@ export function CockpitMeldungWorkflow() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Incident löschen?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Möchtest du diesen Incident wirklich löschen? Diese Aktion kann nicht
-                    rückgängig gemacht werden.
+                    Möchtest du diesen Incident wirklich löschen? Diese Aktion kann nicht rückgängig
+                    gemacht werden.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -156,21 +182,15 @@ export function CockpitMeldungWorkflow() {
         </Card>
       </div>
 
-      {/* Mittlere Spalte: Dateiansicht bzw. Transkript */}
+      {/* Mittlere Spalte: Dateiansicht */}
       <Card className="min-h-0">
         <CardHeader>
           <CardTitle>Anzeige / E-Mail / Bericht</CardTitle>
         </CardHeader>
         <CardContent className="flex min-h-0 flex-1 flex-col">
-          {zeigtTranskript ? (
-            <div className="min-h-0 flex-1 overflow-y-auto rounded-md bg-muted p-3 text-xs whitespace-pre-line">
-              {TRANSKRIPT_MOCK}
-            </div>
-          ) : (
-            <div className="flex min-h-0 flex-1 items-center justify-center rounded-md border bg-muted text-xs text-muted-foreground">
-              Dateiansicht folgt
-            </div>
-          )}
+          <div className="flex min-h-0 flex-1 items-center justify-center rounded-md border bg-muted text-xs text-muted-foreground">
+            Dateiansicht folgt
+          </div>
         </CardContent>
         <CardFooter className="gap-2">
           <Button variant="outline">PDF</Button>
@@ -187,11 +207,54 @@ export function CockpitMeldungWorkflow() {
           <CardTitle>KI-Chat</CardTitle>
         </CardHeader>
         <CardContent className="flex min-h-0 flex-1 flex-col gap-3">
-          <Textarea
-            readOnly
-            className="min-h-0 flex-1"
-            placeholder="KI-Antworten erscheinen hier"
-          />
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
+            {CHAT_VERLAUF.map((nachricht) => {
+              const istKi = nachricht.rolle === "ki";
+              return (
+                <Fragment key={nachricht.id}>
+                  <Message align={istKi ? "start" : "end"}>
+                    <MessageContent>
+                      <div
+                        className={`max-w-[85%] rounded-lg px-3 py-2 ${
+                          istKi
+                            ? "self-start bg-muted"
+                            : "self-end bg-primary text-primary-foreground"
+                        }`}
+                      >
+                        {nachricht.text}
+                      </div>
+                    </MessageContent>
+                  </Message>
+                  {nachricht.aktion && (
+                    <div className="flex flex-col gap-2">
+                      <Marker>
+                        <MarkerIcon>
+                          <FileTextIcon />
+                        </MarkerIcon>
+                        <MarkerContent>{nachricht.aktion}</MarkerContent>
+                      </Marker>
+                      {nachricht.hatAenderungsAktion && (
+                        <>
+                          <Marker>
+                            <MarkerIcon>
+                              <CheckIcon />
+                            </MarkerIcon>
+                            <MarkerContent>Änderung übernehmen</MarkerContent>
+                          </Marker>
+                          <Marker>
+                            <MarkerIcon>
+                              <RotateCcwIcon />
+                            </MarkerIcon>
+                            <MarkerContent>Änderung verwerfen</MarkerContent>
+                          </Marker>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </Fragment>
+              );
+            })}
+          </div>
           <div className="flex items-end gap-2">
             <Textarea placeholder="Nachricht an die KI" className="flex-1" />
             <Button size="icon" aria-label="Senden">
