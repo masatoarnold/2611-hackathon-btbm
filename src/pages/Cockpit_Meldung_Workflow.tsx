@@ -502,23 +502,24 @@ export function CockpitMeldungWorkflow() {
         <Card className="min-h-0">
           <CardHeader>
             <CardTitle>Vorgeschlagene Subunternehmer</CardTitle>
-            <Input
-              type="search"
-              aria-label="Verträge durchsuchen"
-              placeholder="Verträge durchsuchen …"
-              value={vertragsSuche}
-              onChange={(event) => setVertragsSuche(event.target.value)}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              className="self-start"
-              disabled={keywordsLaden}
-              onClick={keywordsVorschlagen}
-            >
-              {keywordsLaden ? <Loader2Icon className="animate-spin" /> : <SparklesIcon />}
-              {keywordsLaden ? "Keywords werden erstellt …" : "Keywords vorschlagen"}
-            </Button>
+            <div className="grid grid-cols-[3fr_1fr] gap-2">
+              <Input
+                type="search"
+                aria-label="Verträge durchsuchen"
+                placeholder="Verträge durchsuchen …"
+                value={vertragsSuche}
+                onChange={(event) => setVertragsSuche(event.target.value)}
+              />
+              <Button
+                variant="outline"
+                className="h-auto min-h-8 whitespace-normal"
+                disabled={keywordsLaden}
+                onClick={keywordsVorschlagen}
+              >
+                {keywordsLaden ? <Loader2Icon className="animate-spin" /> : <SparklesIcon />}
+                Vorschlag
+              </Button>
+            </div>
           </CardHeader>
           <ScrollArea className="min-h-0 flex-1">
             <CardContent>
