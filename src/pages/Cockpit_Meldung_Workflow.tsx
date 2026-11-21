@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import {
+  CheckIcon,
   ChevronDownIcon,
   FileTextIcon,
   FlagIcon,
   ImageIcon,
   MailIcon,
   PaperclipIcon,
+  RotateCcwIcon,
   SendIcon,
   Trash2Icon,
   XIcon,
@@ -43,8 +45,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Marker, MarkerContent, MarkerIcon } from "@/components/ui/marker";
+import { Message, MessageContent } from "@/components/ui/message";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { sendChat } from "@/lib/chat";
 
 // Platzhalterdaten, bis die Anbindung steht
 const SUBUNTERNEHMER = [
@@ -93,6 +98,31 @@ const ZUSAMMENFASSUNG_PLATZHALTER =
 
 const TRANSKRIPT_MOCK =
   "Der Betonlieferant hat gerade angerufen. Die Lieferung von 10 t verspätet sich um etwa zwei Stunden.\n\nGrund laut Lieferant: Verkehrsbehinderung auf der Zufahrt zur Baustelle.\n\nIch habe die Betonpumpe in Abschnitt B vorsorglich umdisponiert und den Subunternehmer Tiefbau informiert.";
+
+const VORFALL_TITEL = "Lieferverspätung";
+
+type ChatNachricht = {
+  id: string;
+  rolle: "ki" | "nutzer";
+  text: string;
+  aktion?: string;
+  hatAenderungsAktion?: boolean;
+};
+
+const CHAT_BEGRUESSUNG: ChatNachricht = {
+  id: "begruessung",
+  rolle: "ki",
+  text: "Ich habe die Meldung ausgewertet und den Bautagesbericht vorbereitet. Womit soll ich ihn ergänzen?",
+};
+
+/** Turns the visible chat into API messages; the API must start with a user turn. */
+function alsApiNachrichten(verlauf: ChatNachricht[]) {
+  const ersteNutzerNachricht = verlauf.findIndex(({ rolle }) => rolle === "nutzer");
+  return verlauf.slice(ersteNutzerNachricht).map(({ rolle, text }) => ({
+    role: rolle === "ki" ? ("assistant" as const) : ("user" as const),
+    content: text,
+  }));
+}
 
 const PRIORITIES = [1, 2, 3, 4, 5];
 const DEFAULT_PRIORITY = 1;
@@ -159,13 +189,43 @@ export function CockpitMeldungWorkflow() {
 
   const betroffeneNamen = betroffeneVertraege.map((eintrag) => eintrag.vertrag);
 
+  const [chatVerlauf, setChatVerlauf] = useState<ChatNachricht[]>([CHAT_BEGRUESSUNG]);
+  const [chatEingabe, setChatEingabe] = useState("");
+  const [kiAntwortet, setKiAntwortet] = useState(false);
+  const [chatFehler, setChatFehler] = useState<string | null>(null);
+
+  async function nachrichtSenden() {
+    const text = chatEingabe.trim();
+    if (!text || kiAntwortet) return;
+
+    const verlauf = [...chatVerlauf, { id: crypto.randomUUID(), rolle: "nutzer" as const, text }];
+    setChatVerlauf(verlauf);
+    setChatEingabe("");
+    setChatFehler(null);
+    setKiAntwortet(true);
+    try {
+      const antwort = await sendChat({
+        vorfall: { titel: VORFALL_TITEL, zusammenfassung },
+        messages: alsApiNachrichten(verlauf),
+      });
+      setChatVerlauf((aktuell) => [
+        ...aktuell,
+        { id: crypto.randomUUID(), rolle: "ki", text: antwort },
+      ]);
+    } catch (error) {
+      setChatFehler(error instanceof Error ? error.message : "KI-Antwort fehlgeschlagen.");
+    } finally {
+      setKiAntwortet(false);
+    }
+  }
+
   return (
     <div className="grid h-screen grid-cols-[5fr_5fr_3fr] gap-4 bg-background p-4 text-foreground">
       {/* Linke Spalte: Incident und Subunternehmer */}
       <div className="grid min-h-0 grid-rows-[3fr_2fr] gap-4">
         <Card className="min-h-0">
           <CardHeader>
-            <CardTitle>Incident: Lieferverspätung</CardTitle>
+            <CardTitle>Incident: {VORFALL_TITEL}</CardTitle>
           </CardHeader>
           <CardContent className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
             <section className="flex flex-col gap-2">
@@ -243,8 +303,8 @@ export function CockpitMeldungWorkflow() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Incident löschen?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Möchtest du diesen Incident wirklich löschen? Diese Aktion kann nicht
-                    rückgängig gemacht werden.
+                    Möchtest du diesen Incident wirklich löschen? Diese Aktion kann nicht rückgängig
+                    gemacht werden.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -383,17 +443,84 @@ export function CockpitMeldungWorkflow() {
           <CardTitle>KI-Chat</CardTitle>
         </CardHeader>
         <CardContent className="flex min-h-0 flex-1 flex-col gap-3">
-          <Textarea
-            readOnly
-            className="min-h-0 flex-1"
-            placeholder="KI-Antworten erscheinen hier"
-          />
-          <div className="flex items-end gap-2">
-            <Textarea placeholder="Nachricht an die KI" className="flex-1" />
-            <Button size="icon" aria-label="Senden">
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
+            {chatVerlauf.map((nachricht) => {
+              const istKi = nachricht.rolle === "ki";
+              return (
+                <Fragment key={nachricht.id}>
+                  <Message align={istKi ? "start" : "end"}>
+                    <MessageContent>
+                      <div
+                        className={`max-w-[85%] rounded-lg px-3 py-2 ${
+                          istKi
+                            ? "self-start bg-muted"
+                            : "self-end bg-primary text-primary-foreground"
+                        }`}
+                      >
+                        <p className="whitespace-pre-wrap">{nachricht.text}</p>
+                      </div>
+                    </MessageContent>
+                  </Message>
+                  {nachricht.aktion && (
+                    <div className="flex flex-col gap-2">
+                      <Marker>
+                        <MarkerIcon>
+                          <FileTextIcon />
+                        </MarkerIcon>
+                        <MarkerContent>{nachricht.aktion}</MarkerContent>
+                      </Marker>
+                      {nachricht.hatAenderungsAktion && (
+                        <>
+                          <Marker>
+                            <MarkerIcon>
+                              <CheckIcon />
+                            </MarkerIcon>
+                            <MarkerContent>Änderung übernehmen</MarkerContent>
+                          </Marker>
+                          <Marker>
+                            <MarkerIcon>
+                              <RotateCcwIcon />
+                            </MarkerIcon>
+                            <MarkerContent>Änderung verwerfen</MarkerContent>
+                          </Marker>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </Fragment>
+              );
+            })}
+            {kiAntwortet && <p className="text-xs text-muted-foreground">KI schreibt…</p>}
+            {chatFehler && <p className="text-xs text-destructive">{chatFehler}</p>}
+          </div>
+          <form
+            className="flex items-end gap-2"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void nachrichtSenden();
+            }}
+          >
+            <Textarea
+              placeholder="Nachricht an die KI"
+              className="flex-1"
+              value={chatEingabe}
+              onChange={(event) => setChatEingabe(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  void nachrichtSenden();
+                }
+              }}
+            />
+            <Button
+              type="submit"
+              size="icon"
+              aria-label="Senden"
+              disabled={kiAntwortet || !chatEingabe.trim()}
+            >
               <SendIcon />
             </Button>
-          </div>
+          </form>
         </CardContent>
       </Card>
     </div>

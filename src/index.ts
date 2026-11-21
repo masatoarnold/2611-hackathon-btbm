@@ -1,10 +1,17 @@
 import { serve } from "bun";
 import index from "./index.html";
+import { handleChat } from "./server/chat";
+import { handleSummarize } from "./server/summarize";
+import { handleTranscribe } from "./server/transcribe";
 
 const server = serve({
   routes: {
     // Serve index.html for all unmatched routes.
     "/*": index,
+
+    "/api/transcribe": { POST: handleTranscribe },
+    "/api/summarize": { POST: handleSummarize },
+    "/api/chat": { POST: handleChat },
 
     "/api/hello": {
       GET() {

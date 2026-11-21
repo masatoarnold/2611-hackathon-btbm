@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import {
   ArrowLeftIcon,
   CameraIcon,
@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { useDictation } from "@/lib/speech";
+import { summarizeTranscript, type ReportSummary } from "@/lib/summarize";
 
 type Report = {
   id: number;
@@ -39,7 +41,10 @@ type Report = {
   attachments: string[];
 };
 
-type View = { name: "list" } | { name: "new"; id?: number } | { name: "detail"; id: number };
+type View =
+  | { name: "list" }
+  | { name: "new"; id?: number }
+  | { name: "detail"; id: number; from: "list" | "new" };
 
 const VORGANGSTYPEN = ["Meldung", "Besprechungsprotokoll"];
 const NO_VORGANGSTYP_VALUE = "keine-auswahl";
@@ -78,6 +83,9 @@ const INITIAL_REPORTS: Report[] = [
     attachments: [],
   },
 ];
+
+const formatDuration = (seconds: number) =>
+  `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 
 const HOURS = Array.from({ length: 10 }, (_, index) => index + 7);
 const HOUR_HEIGHT_PX = 48;
@@ -131,7 +139,7 @@ export function Satellite() {
           {view.name === "list" && (
             <ReportList
               reports={reports}
-              onOpen={(id) => setView({ name: "detail", id })}
+              onOpen={(id) => setView({ name: "detail", id, from: "list" })}
               onChangePriority={changePriority}
               onCreate={() => setView({ name: "new" })}
             />
@@ -142,7 +150,7 @@ export function Satellite() {
               onFinish={(report) => {
                 if (view.id === undefined) addReport(report);
                 else updateReport(report.id, report);
-                setView({ name: "detail", id: report.id });
+                setView({ name: "detail", id: report.id, from: "new" });
               }}
               onCancel={() => setView({ name: "list" })}
             />
@@ -150,7 +158,9 @@ export function Satellite() {
           {view.name === "detail" && (
             <ReportDetail
               report={reports.find((report) => report.id === view.id)}
-              onBack={() => setView({ name: "new", id: view.id })}
+              onBack={() =>
+                setView(view.from === "new" ? { name: "new", id: view.id } : { name: "list" })
+              }
               onChange={(content) => updateReport(view.id, { content })}
               onChangeLocation={(location) => updateReport(view.id, { location })}
               onChangeVorgangstyp={(vorgangstyp) => updateReport(view.id, { vorgangstyp })}
@@ -259,26 +269,56 @@ function NewReport({
   onCancel: () => void;
 }) {
   const [vorgangstyp, setVorgangstyp] = useState<string | null>(initialReport?.vorgangstyp ?? null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [text] = useState("");
+  const [transcript, setTranscript] = useState("");
+  const dictation = useDictation((spoken) =>
+    setTranscript((current) => [current, spoken].filter(Boolean).join(" ")),
+  );
+  const isRecording = dictation.status === "recording";
   const [manualText, setManualText] = useState("");
   const [showMetadata, setShowMetadata] = useState(false);
   const [timestamp] = useState(() => initialReport?.timestamp ?? new Date());
   const [location, setLocation] = useState(initialReport?.location ?? "");
   const [priority, setPriority] = useState(initialReport?.priority ?? DEFAULT_PRIORITY);
   const [attachments, setAttachments] = useState<string[]>(initialReport?.attachments ?? []);
+  const [summary, setSummary] = useState<ReportSummary | null>(null);
+  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+
+  // Every new transcript is summarized; the AI suggestions prefill the metadata.
+  useEffect(() => {
+    if (!transcript) return;
+    let cancelled = false;
+    setIsSummarizing(true);
+    setSummaryError(null);
+    summarizeTranscript(transcript)
+      .then((result) => {
+        if (cancelled) return;
+        setSummary(result);
+        setVorgangstyp(result.vorgangstyp);
+        setPriority(result.priority);
+        setLocation((current) => result.location || current);
+      })
+      .catch((error: Error) => !cancelled && setSummaryError(error.message))
+      .finally(() => !cancelled && setIsSummarizing(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [transcript]);
+
+  const isBusy = dictation.status === "transcribing" || isSummarizing;
 
   const finish = () =>
     onFinish({
       id: initialReport?.id ?? Date.now(),
       title:
+        summary?.title ??
         initialReport?.title ??
         (vorgangstyp ? `${vorgangstyp}: Lieferverspätung` : "Lieferverspätung"),
       content:
-        [text, manualText].filter(Boolean).join("\n\n") ||
+        [summary?.summary, manualText].filter(Boolean).join("\n\n") ||
         initialReport?.content ||
         "Automatisch erstellte Zusammenfassung (Mock).",
-      transcript: initialReport?.transcript ?? "Mock-Transkript der Audioaufnahme...",
+      transcript: transcript || initialReport?.transcript || "",
       priority,
       timestamp,
       location,
@@ -294,20 +334,29 @@ function NewReport({
             size="icon-lg"
             variant={isRecording ? "destructive" : "outline"}
             className="size-16 rounded-full"
-            onClick={() => setIsRecording((current) => !current)}
+            aria-label={isRecording ? "Aufnahme beenden" : "Aufnahme starten"}
+            disabled={isBusy}
+            onClick={isRecording ? dictation.stop : dictation.start}
           >
             {isRecording ? <SquareIcon className="size-6" /> : <MicIcon className="size-6" />}
           </Button>
-          <span className="text-xs">
-            {isRecording ? "Aufnahme läuft… 00:12" : "Ton aufzeichnen"}
+          <span className="text-xs tabular-nums">
+            {dictation.status === "recording" &&
+              `Aufnahme läuft… ${formatDuration(dictation.elapsed)}`}
+            {dictation.status === "transcribing" && "Wird transkribiert…"}
+            {dictation.status === "idle" &&
+              (isSummarizing ? "Wird zusammengefasst…" : "Ton aufzeichnen")}
           </span>
+          {(dictation.error ?? summaryError) && (
+            <span className="text-xs text-destructive">{dictation.error ?? summaryError}</span>
+          )}
         </CardContent>
       </Card>
 
       <Textarea
         placeholder="KI-generierte Zusammenfassung"
         aria-label="KI-generierte Zusammenfassung"
-        value={text}
+        value={summary?.summary ?? ""}
         readOnly
       />
 
@@ -375,7 +424,7 @@ function NewReport({
         <Button variant="ghost" size="lg" onClick={onCancel}>
           Abbrechen
         </Button>
-        <Button size="lg" onClick={finish}>
+        <Button size="lg" disabled={isBusy} onClick={finish}>
           Weiter
         </Button>
       </div>
