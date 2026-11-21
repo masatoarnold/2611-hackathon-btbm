@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   CheckIcon,
   FileTextIcon,
+  FlagIcon,
   ImageIcon,
   MicIcon,
   PencilIcon,
@@ -10,7 +11,11 @@ import {
   Trash2Icon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Item, ItemActions, ItemContent, ItemDescription, ItemTitle } from "@/components/ui/item";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -19,24 +24,37 @@ type Report = {
   title: string;
   content: string;
   transcript: string;
+  priority: number;
 };
 
 type View = { name: "list" } | { name: "new" } | { name: "detail"; id: number };
 
 const TEMPLATES = ["Meldung", "Besprechungsprotokoll"];
 
+const PRIORITIES = [1, 2, 3, 4, 5];
+const DEFAULT_PRIORITY = 3;
+const PRIORITY_COLOR_CLASSES: Record<number, string> = {
+  1: "text-foreground",
+  2: "text-blue-500",
+  3: "text-yellow-500",
+  4: "text-red-500",
+  5: "text-violet-500",
+};
+
 const INITIAL_REPORTS: Report[] = [
   {
     id: 1,
-    title: "Meldung: Equipment defekt",
+    title: "Equipment defekt",
     content: "Betonpumpe an Abschnitt B ausgefallen. Ersatz wurde angefragt.",
     transcript: "Hier ist die Betonpumpe an Abschnitt B ausgefallen, wir brauchen Ersatz...",
+    priority: 4,
   },
   {
     id: 2,
-    title: "Meldung: Lieferverspätung",
+    title: "Lieferverspätung",
     content: "Betonlieferung 10t verspätet sich um 2 Stunden.",
     transcript: "Der Betonlieferant hat gerade angerufen, es dauert zwei Stunden länger...",
+    priority: 2,
   },
 ];
 
@@ -50,7 +68,19 @@ const APPOINTMENTS = [
   { title: "Glaslieferung", startHour: 13, durationHours: 1, own: false },
 ];
 
-const PERSONNEL = ["MK", "TS", "AB", "LP", "JR"];
+type Todo = {
+  id: number;
+  title: string;
+  done: boolean;
+};
+
+const INITIAL_TODOS: Todo[] = [
+  { id: 1, title: "Betonpumpe Abschnitt B prüfen", done: false },
+  { id: 2, title: "Lieferschein Glas unterschreiben", done: true },
+  { id: 3, title: "Abnahmeprotokoll Rohbau erstellen", done: false },
+  { id: 4, title: "Sicherheitseinweisung Parkettierer", done: true },
+  { id: 5, title: "Baustrom Container 2 kontrollieren", done: false },
+];
 
 export function Satellite() {
   const [reports, setReports] = useState(INITIAL_REPORTS);
@@ -63,6 +93,10 @@ export function Satellite() {
     );
   const deleteReport = (id: number) =>
     setReports((current) => current.filter((report) => report.id !== id));
+  const changePriority = (id: number, priority: number) =>
+    setReports((current) =>
+      current.map((report) => (report.id === id ? { ...report, priority } : report)),
+    );
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col bg-background text-foreground">
@@ -77,6 +111,7 @@ export function Satellite() {
             <ReportList
               reports={reports}
               onOpen={(id) => setView({ name: "detail", id })}
+              onChangePriority={changePriority}
               onCreate={() => setView({ name: "new" })}
             />
           )}
@@ -113,23 +148,48 @@ export function Satellite() {
 function ReportList({
   reports,
   onOpen,
+  onChangePriority,
   onCreate,
 }: {
   reports: Report[];
   onOpen: (id: number) => void;
+  onChangePriority: (id: number, priority: number) => void;
   onCreate: () => void;
 }) {
   return (
     <div className="flex flex-1 flex-col gap-2">
       {reports.map((report) => (
-        <Button
-          key={report.id}
-          variant="outline"
-          className="h-12 justify-start"
-          onClick={() => onOpen(report.id)}
-        >
-          {report.title}
-        </Button>
+        <Item key={report.id} variant="outline">
+          <ItemContent className="cursor-pointer" onClick={() => onOpen(report.id)}>
+            <ItemTitle>{report.title}</ItemTitle>
+            <ItemDescription>{report.content}</ItemDescription>
+          </ItemContent>
+          <ItemActions>
+            <Select
+              value={String(report.priority)}
+              onValueChange={(value) => onChangePriority(report.id, Number(value))}
+            >
+              <SelectTrigger
+                size="sm"
+                className="w-16 shrink-0 tabular-nums"
+                aria-label="Priorität ändern"
+              >
+                <span className="flex items-center gap-1">
+                  <FlagIcon className={`fill-current ${PRIORITY_COLOR_CLASSES[report.priority]}`} />
+                  {report.priority}
+                </span>
+              </SelectTrigger>
+              <SelectContent position="popper" align="end" className="min-w-0">
+                {PRIORITIES.map((priority) => (
+                  <SelectItem key={priority} value={String(priority)} className="pr-7">
+                    <FlagIcon className={`fill-current ${PRIORITY_COLOR_CLASSES[priority]}`} />
+                    {priority}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </ItemActions>
+        </Item>
       ))}
       {reports.length === 0 && (
         <p className="text-xs text-muted-foreground">Noch keine Aufzeichnungen.</p>
@@ -161,6 +221,7 @@ function NewReport({
       title: `${template}: Lieferverspätung`,
       content: text || "Automatisch erstellte Zusammenfassung (Mock).",
       transcript: "Mock-Transkript der Audioaufnahme...",
+      priority: DEFAULT_PRIORITY,
     });
 
   return (
@@ -354,22 +415,88 @@ function Schedule() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Personal vor Ort</CardTitle>
-        </CardHeader>
-        <CardContent className="flex items-center gap-2">
-          {PERSONNEL.map((initials) => (
-            <div
-              key={initials}
-              className="flex size-9 items-center justify-center rounded-full border text-xs"
-            >
-              {initials}
-            </div>
-          ))}
-          <span className="text-muted-foreground">…</span>
-        </CardContent>
-      </Card>
+      <TodoList />
     </div>
+  );
+}
+
+function TodoList() {
+  const [todos, setTodos] = useState(INITIAL_TODOS);
+
+  const [newTitle, setNewTitle] = useState("");
+
+  const toggleTodo = (id: number) =>
+    setTodos((current) =>
+      current.map((todo) => (todo.id === id ? { ...todo, done: !todo.done } : todo)),
+    );
+
+  const addTodo = () => {
+    const title = newTitle.trim();
+    if (!title) return;
+    setTodos((current) => [...current, { id: Date.now(), title, done: false }]);
+    setNewTitle("");
+  };
+
+  const deleteTodo = (id: number) =>
+    setTodos((current) => current.filter((todo) => todo.id !== id));
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Aufgabenliste</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-2">
+          {todos.map((todo) => (
+            <li key={todo.id} className="flex items-center gap-2 text-sm">
+              <Checkbox
+                id={`todo-${todo.id}`}
+                checked={todo.done}
+                onCheckedChange={() => toggleTodo(todo.id)}
+              />
+              <label
+                htmlFor={`todo-${todo.id}`}
+                className={`flex-1 ${todo.done ? "text-muted-foreground line-through" : ""}`}
+              >
+                {todo.title}
+              </label>
+              <Button
+                size="icon"
+                variant="ghost"
+                aria-label={`${todo.title} löschen`}
+                onClick={() => deleteTodo(todo.id)}
+              >
+                <Trash2Icon />
+              </Button>
+            </li>
+          ))}
+          {todos.length === 0 && (
+            <p className="text-xs text-muted-foreground">Keine To-dos vorhanden.</p>
+          )}
+        </ul>
+
+        <form
+          className="flex items-center gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            addTodo();
+          }}
+        >
+          <Input
+            placeholder="Neue Aufgabe…"
+            value={newTitle}
+            onChange={(event) => setNewTitle(event.target.value)}
+          />
+          <Button
+            type="submit"
+            size="icon"
+            aria-label="Aufgabe hinzufügen"
+            disabled={!newTitle.trim()}
+          >
+            <PlusIcon />
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

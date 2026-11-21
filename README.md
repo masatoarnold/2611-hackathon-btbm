@@ -16,7 +16,7 @@ Funktionen des Satelliten
 
 - Tagesplan
   - Kalender mit Terminen
-  - Personen vor Ort auflisten und kontaktieren
+  - Aufgabenliste
 - Meldung erstellen
   - Audioeingabe mit Transkript
   - Bilder hinzufügen
