@@ -73,6 +73,8 @@ const LIEFERANTEN_MOCK = [
 
 type Meldung = { id: string; titel: string; beschreibung: string };
 
+const MELDUNG_WORKFLOW_PFAD = "/cockpit/meldung";
+
 function MeldungsListe({
   ueberschrift,
   meldungen,
@@ -120,7 +122,9 @@ function MeldungsListe({
                       </Button>
                     </>
                   )}
-                  <Button variant="outline">Bearbeiten</Button>
+                  <Button variant="outline" asChild>
+                    <a href={MELDUNG_WORKFLOW_PFAD}>Bearbeiten</a>
+                  </Button>
                 </div>
               </>
             )}
