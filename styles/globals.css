@@ -58,9 +58,9 @@
 /* Theme "Bauindustrie": ultramarine and sky blue on white, navy text */
 :root {
   --radius: 1.25rem;
-  --background: #ffffff;
+  --background: #eef0f4;
   --foreground: #20345b;
-  --card: #f5f6f8;
+  --card: #ffffff;
   --card-foreground: #20345b;
   --popover: #ffffff;
   --popover-foreground: #20345b;
@@ -68,7 +68,7 @@
   --primary-foreground: #ffffff;
   --secondary: #d3e6f6;
   --secondary-foreground: #281ea9;
-  --muted: #eceef2;
+  --muted: #e3e6ec;
   --muted-foreground: #4a5b7a;
   --accent: #d3e6f6;
   --accent-foreground: #281ea9;
