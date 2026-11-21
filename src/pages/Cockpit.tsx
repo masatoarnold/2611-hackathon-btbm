@@ -1,10 +1,9 @@
 import { useRef, useState, type ChangeEvent } from "react";
 import {
   CheckIcon,
-  DownloadIcon,
   EyeIcon,
   FileTextIcon,
-  PencilIcon,
+  MailIcon,
   PlusIcon,
   Trash2Icon,
   XIcon,
@@ -13,6 +12,13 @@ import {
 import { CockpitHeader } from "@/components/CockpitHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -24,8 +30,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import { alsWordHerunterladen, inNeuemFensterOeffnen } from "@/lib/export";
+import { alsPdfHerunterladen, alsWordHerunterladen } from "@/lib/export";
+import { MailDialog } from "@/pages/Cockpit_Meldung_Workflow";
 
 // Mock-Daten (fiktives Projekt Wohnanlage Lindenhof, Haus B), bis die Anbindung steht
 const MELDUNGSDATUM = "21.11.26";
@@ -33,8 +39,26 @@ const MELDUNGSDATUM = "21.11.26";
 const TAGESBERICHT = {
   datum: MELDUNGSDATUM,
   projekt: "Wohnanlage Lindenhof – Haus B",
-  text: "Betonage Kellerwände Abschnitt B: Betonpumpe um 08:15 ausgefallen, Ersatzpumpe ab 10:30 im Einsatz. Transportbeton (10 t) ca. 2 h verspätet wegen Stau an der Zufahrt Nord, Betonage verschoben auf 11:45–15:30. Schalung Abschnitt C begonnen. 14 Arbeitskräfte vor Ort, trocken, 4–6 °C.",
+  zusammenfassung:
+    "Betonpumpe ausgefallen, Ersatz ab 10:30. Beton ca. 2 h verspätet, Betonage 11:45–15:30.",
+  abschnitte: [
+    {
+      titel: "Betonage Kellerwände Abschnitt B",
+      text: "Betonpumpe um 08:15 ausgefallen, Ersatzpumpe ab 10:30 im Einsatz.",
+    },
+    {
+      titel: "Lieferungen",
+      text: "Transportbeton (10 t) ca. 2 h verspätet wegen Stau an der Zufahrt Nord, Betonage verschoben auf 11:45–15:30.",
+    },
+    { titel: "Weitere Arbeiten", text: "Schalung Abschnitt C begonnen." },
+    { titel: "Personal und Witterung", text: "14 Arbeitskräfte vor Ort, trocken, 4–6 °C." },
+  ],
 };
+
+type BerichtAbschnitt = { titel: string; text: string };
+
+const berichtAlsText = (abschnitte: BerichtAbschnitt[]) =>
+  abschnitte.map(({ titel, text }) => `${titel}\n${text}`).join("\n\n");
 
 const MELDUNGEN_ANSTEHEND_MOCK = [
   {
@@ -340,11 +364,15 @@ export function Cockpit() {
   );
   const [planTab, setPlanTab] = useState("aufgaben");
   const [neuerEintragOffen, setNeuerEintragOffen] = useState(false);
-  const [berichtText, setBerichtText] = useState(TAGESBERICHT.text);
-  const [berichtBearbeiten, setBerichtBearbeiten] = useState(false);
+  const [berichtAbschnitte, setBerichtAbschnitte] = useState<BerichtAbschnitt[]>(
+    TAGESBERICHT.abschnitte,
+  );
+  const [berichtOffen, setBerichtOffen] = useState(false);
+  const [mailOffen, setMailOffen] = useState(false);
   const [lieferanten, setLieferanten] = useState(LIEFERANTEN_MOCK);
   const vertragsInput = useRef<HTMLInputElement>(null);
 
+  const berichtText = berichtAlsText(berichtAbschnitte);
   const berichtTitel = `Tagesbericht ${TAGESBERICHT.datum} ${TAGESBERICHT.projekt}`;
 
   const toggleMeldung = (id: string) =>
@@ -418,44 +446,12 @@ export function Cockpit() {
                   {TAGESBERICHT.projekt}
                 </CardTitle>
               </CardHeader>
-              <ScrollArea className="min-h-0 flex-1">
-                <CardContent className="flex flex-col text-sm text-muted-foreground">
-                  {berichtBearbeiten ? (
-                    <Textarea
-                      autoFocus
-                      aria-label="Tagesbericht bearbeiten"
-                      value={berichtText}
-                      onChange={(event) => setBerichtText(event.target.value)}
-                      className="min-h-28 resize-none field-sizing-fixed"
-                    />
-                  ) : (
-                    berichtText
-                  )}
-                </CardContent>
-              </ScrollArea>
-              <CardContent className="flex justify-end gap-1">
-                <Button
-                  variant="outline"
-                  onClick={() => inNeuemFensterOeffnen(berichtTitel, berichtText)}
-                >
-                  Bericht ansehen
-                </Button>
-                <Button
-                  variant={berichtBearbeiten ? "secondary" : "outline"}
-                  size="icon"
-                  aria-label={berichtBearbeiten ? "Bearbeitung beenden" : "Bericht bearbeiten"}
-                  aria-pressed={berichtBearbeiten}
-                  onClick={() => setBerichtBearbeiten((aktuell) => !aktuell)}
-                >
-                  {berichtBearbeiten ? <CheckIcon /> : <PencilIcon />}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  aria-label="Bericht herunterladen"
-                  onClick={() => alsWordHerunterladen(berichtTitel, berichtText)}
-                >
-                  <DownloadIcon />
+              <CardContent className="min-h-0 flex-1 text-sm text-muted-foreground">
+                {TAGESBERICHT.zusammenfassung}
+              </CardContent>
+              <CardContent className="flex justify-end">
+                <Button variant="outline" onClick={() => setBerichtOffen(true)}>
+                  Bericht sehen
                 </Button>
               </CardContent>
             </Card>
@@ -636,6 +632,62 @@ export function Cockpit() {
           </Card>
         </div>
       </main>
+
+      <Dialog open={berichtOffen} onOpenChange={setBerichtOffen}>
+        <DialogContent className="h-[calc(100vh-2rem)] grid-rows-[auto_minmax(0,1fr)_auto] sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Tagesbericht</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="min-h-0 rounded-xl bg-background">
+            <article aria-label="Tagesbericht bearbeiten" className="flex flex-col gap-4 p-4">
+              <h1 className="text-lg font-semibold">{berichtTitel}</h1>
+              {berichtAbschnitte.map(({ titel, text }, index) => (
+                <section key={titel} className="flex flex-col gap-1">
+                  <h2 className="text-sm font-semibold text-primary">{titel}</h2>
+                  <p
+                    contentEditable="plaintext-only"
+                    suppressContentEditableWarning
+                    aria-label={`${titel} bearbeiten`}
+                    className="rounded-md text-sm whitespace-pre-wrap outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    onBlur={(event) => {
+                      const neuerText = event.currentTarget.innerText;
+                      setBerichtAbschnitte((aktuell) =>
+                        aktuell.map((abschnitt, i) =>
+                          i === index ? { ...abschnitt, text: neuerText } : abschnitt,
+                        ),
+                      );
+                    }}
+                  >
+                    {text}
+                  </p>
+                </section>
+              ))}
+            </article>
+          </ScrollArea>
+          <DialogFooter className="sm:justify-start">
+            <Button variant="outline" onClick={() => alsPdfHerunterladen(berichtTitel, berichtText)}>
+              PDF
+            </Button>
+            <Button variant="outline" onClick={() => alsWordHerunterladen(berichtTitel, berichtText)}>
+              Word
+            </Button>
+            <Button variant="outline" onClick={() => setMailOffen(true)}>
+              <MailIcon />
+              Mail
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <MailDialog
+        open={mailOffen}
+        onOpenChange={setMailOffen}
+        betroffeneVertraege={[]}
+        deadline=""
+        dokumentTyp="Tagesbericht"
+        dokumentText={berichtText}
+        zusammenfassung={TAGESBERICHT.zusammenfassung}
+      />
     </div>
   );
 }
