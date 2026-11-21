@@ -87,8 +87,10 @@ const INITIAL_REPORTS: Report[] = [
 const formatDuration = (seconds: number) =>
   `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 
-const HOURS = Array.from({ length: 10 }, (_, index) => index + 7);
-const HOUR_HEIGHT_PX = 48;
+const formatHour = (hour: number) => {
+  const totalMinutes = Math.round(hour * 60);
+  return `${String(Math.floor(totalMinutes / 60)).padStart(2, "0")}:${String(totalMinutes % 60).padStart(2, "0")}`;
+};
 
 const APPOINTMENTS = [
   { title: "Meeting Bauherr", startHour: 8, durationHours: 1.5, own: true },
@@ -111,6 +113,28 @@ const INITIAL_TODOS: Todo[] = [
   { id: 5, title: "Baustrom Container 2 kontrollieren", done: false },
 ];
 
+const TOUCH_FRIENDLY_CLASSES = [
+  "[&_[data-slot=tabs-list]]:h-12!",
+  "[&_[data-slot=tabs-trigger]]:text-base!",
+  "[&_[data-slot=card]]:text-base!",
+  "[&_[data-slot=card-title]]:text-lg!",
+  "[&_[data-slot=item]]:text-base!",
+  "[&_[data-slot=item-title]]:text-base!",
+  "[&_[data-slot=item-description]]:text-sm!",
+  "[&_[data-slot=textarea]]:text-base!",
+  "[&_[data-slot=button]]:text-base!",
+  "[&_[data-slot=button]]:min-h-12!",
+  "[&_[data-slot=button]]:min-w-12!",
+  "[&_[data-slot=input]]:h-12!",
+  "[&_[data-slot=input]]:text-base!",
+  "[&_[data-slot=select-trigger]]:h-12!",
+  "[&_[data-slot=select-trigger]]:min-w-12!",
+  "[&_[data-slot=select-trigger]]:text-base!",
+  "[&_[data-slot=checkbox]]:size-7!",
+  "[&_[data-slot=item]]:min-h-16",
+  "[&_[data-slot=item]]:p-4!",
+].join(" ");
+
 export function Satellite() {
   const [reports, setReports] = useState(INITIAL_REPORTS);
   const [view, setView] = useState<View>({ name: "list" });
@@ -128,8 +152,10 @@ export function Satellite() {
     );
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col bg-background text-foreground">
-      <Tabs defaultValue="reports" className="flex-1 p-4">
+    <div
+      className={`${TOUCH_FRIENDLY_CLASSES} mx-auto flex min-h-dvh w-full max-w-md flex-col bg-background text-foreground [&_[data-slot=card]]:bg-white [&_[data-slot=input]]:bg-white [&_[data-slot=item]]:bg-white [&_[data-slot=select-trigger]]:bg-white [&_[data-slot=tabs-list]]:bg-white [&_[data-slot=textarea]]:bg-white`}
+    >
+      <Tabs defaultValue="reports" className="flex-1 gap-6 p-4">
         <TabsList>
           <TabsTrigger value="reports">Meldungen</TabsTrigger>
           <TabsTrigger value="schedule">Tagesplan</TabsTrigger>
@@ -195,7 +221,7 @@ function ReportList({
   onCreate: () => void;
 }) {
   return (
-    <div className="flex flex-1 flex-col gap-2">
+    <div className="flex flex-1 flex-col gap-3">
       {reports.map((report) => (
         <Item key={report.id} variant="outline">
           <ItemContent className="cursor-pointer" onClick={() => onOpen(report.id)}>
@@ -211,11 +237,11 @@ function ReportList({
         </Item>
       ))}
       {reports.length === 0 && (
-        <p className="text-xs text-muted-foreground">Noch keine Aufzeichnungen.</p>
+        <p className="text-sm text-muted-foreground">Noch keine Aufzeichnungen.</p>
       )}
       <div className="mt-auto flex justify-center pt-4">
-        <Button size="icon-lg" className="size-14 rounded-full" onClick={onCreate}>
-          <PlusIcon className="size-6" />
+        <Button size="icon-lg" className="size-20 rounded-full" onClick={onCreate}>
+          <PlusIcon className="size-10" />
         </Button>
       </div>
     </div>
@@ -224,7 +250,7 @@ function ReportList({
 
 function PriorityFlag({ priority }: { priority: number }) {
   const color = PRIORITY_COLORS[priority];
-  return <FlagIcon style={{ color, fill: color, stroke: color }} />;
+  return <FlagIcon className="size-5" style={{ color, fill: color, stroke: color }} />;
 }
 
 function PrioritySelect({
@@ -239,17 +265,17 @@ function PrioritySelect({
       <SelectTrigger
         size="sm"
         hideIcon
-        className="w-11 shrink-0 justify-center tabular-nums"
+        className="w-20 shrink-0 justify-center tabular-nums"
         aria-label="Priorität ändern"
       >
-        <span className="flex items-center gap-1">
+        <span className="flex items-center gap-2">
           <PriorityFlag priority={value} />
           {value}
         </span>
       </SelectTrigger>
       <SelectContent position="popper" align="end" className="min-w-0">
         {PRIORITIES.map((priority) => (
-          <SelectItem key={priority} value={String(priority)} className="pr-7">
+          <SelectItem key={priority} value={String(priority)} className="min-h-12 pr-7 text-base">
             <PriorityFlag priority={priority} />
             {priority}
           </SelectItem>
@@ -327,9 +353,9 @@ function NewReport({
     });
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <Card>
-        <CardContent className="flex flex-col items-center gap-3">
+        <CardContent className="flex flex-col items-center gap-4">
           <Button
             size="icon-lg"
             variant={isRecording ? "destructive" : "outline"}
@@ -340,7 +366,7 @@ function NewReport({
           >
             {isRecording ? <SquareIcon className="size-6" /> : <MicIcon className="size-6" />}
           </Button>
-          <span className="text-xs tabular-nums">
+          <span className="text-sm tabular-nums">
             {dictation.status === "recording" &&
               `Aufnahme läuft… ${formatDuration(dictation.elapsed)}`}
             {dictation.status === "transcribing" && "Wird transkribiert…"}
@@ -348,7 +374,7 @@ function NewReport({
               (isSummarizing ? "Wird zusammengefasst…" : "Ton aufzeichnen")}
           </span>
           {(dictation.error ?? summaryError) && (
-            <span className="text-xs text-destructive">{dictation.error ?? summaryError}</span>
+            <span className="text-sm text-destructive">{dictation.error ?? summaryError}</span>
           )}
         </CardContent>
       </Card>
@@ -372,22 +398,24 @@ function NewReport({
         </Button>
 
         {showMetadata && (
-          <div className="flex flex-col gap-4 rounded-md border p-3">
+          <div className="flex flex-col gap-6 rounded-md border p-4">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs text-muted-foreground">Vorgangstyp</span>
+              <span className="text-sm text-muted-foreground">Vorgangstyp</span>
               <Select
                 value={vorgangstyp ?? NO_VORGANGSTYP_VALUE}
                 onValueChange={(next) =>
                   setVorgangstyp(next === NO_VORGANGSTYP_VALUE ? null : next)
                 }
               >
-                <SelectTrigger aria-label="Vorgangstyp auswählen">
+                <SelectTrigger aria-label="Vorgangstyp auswählen" className="w-48">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent position="popper">
-                  <SelectItem value={NO_VORGANGSTYP_VALUE}>Keine Auswahl</SelectItem>
+                  <SelectItem value={NO_VORGANGSTYP_VALUE} className="min-h-12 text-base">
+                    Keine Auswahl
+                  </SelectItem>
                   {VORGANGSTYPEN.map((name) => (
-                    <SelectItem key={name} value={name}>
+                    <SelectItem key={name} value={name} className="min-h-12 text-base">
                       {name}
                     </SelectItem>
                   ))}
@@ -395,23 +423,23 @@ function NewReport({
               </Select>
             </div>
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs text-muted-foreground">Zeitstempel</span>
-              <span className="text-xs tabular-nums">
+              <span className="text-sm text-muted-foreground">Zeitstempel</span>
+              <span className="text-base tabular-nums">
                 {timestamp.toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}
               </span>
             </div>
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs text-muted-foreground">Ort</span>
+              <span className="text-sm text-muted-foreground">Ort</span>
               <Input
                 placeholder="Ort eingeben"
                 aria-label="Ort"
-                className="w-40"
+                className="w-48"
                 value={location}
                 onChange={(event) => setLocation(event.target.value)}
               />
             </div>
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs text-muted-foreground">Priorität</span>
+              <span className="text-sm text-muted-foreground">Priorität</span>
               <PrioritySelect value={priority} onChange={setPriority} />
             </div>
           </div>
@@ -457,7 +485,7 @@ function PhotoAttachments({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <span className="flex-1 text-xs text-muted-foreground">
+        <span className="flex-1 text-sm text-muted-foreground">
           {photos.length} Fotos angehängt
         </span>
         <input
@@ -479,20 +507,20 @@ function PhotoAttachments({
         <Button
           size="icon-lg"
           variant="outline"
-          className="size-10 rounded-full"
+          className="size-14 rounded-full"
           aria-label="Foto aufnehmen"
           onClick={() => cameraInputRef.current?.click()}
         >
-          <CameraIcon />
+          <CameraIcon className="size-6" />
         </Button>
         <Button
           size="icon-lg"
           variant="outline"
-          className="size-10 rounded-full"
+          className="size-14 rounded-full"
           aria-label="Foto hinzufügen"
           onClick={() => galleryInputRef.current?.click()}
         >
-          <PlusIcon />
+          <PlusIcon className="size-6" />
         </Button>
       </div>
       {photos.length > 0 && (
@@ -548,24 +576,24 @@ function ReportDetail({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-2">
-        <Button variant="ghost" size="icon" aria-label="Zurück" onClick={onBack}>
-          <ArrowLeftIcon />
+        <Button variant="ghost" className="size-14" aria-label="Zurück" onClick={onBack}>
+          <ArrowLeftIcon className="size-7" />
         </Button>
         <CardTitle className="flex-1">{report.title}</CardTitle>
         <PrioritySelect value={report.priority} onChange={onChangePriority} />
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+      <CardContent className="flex flex-col gap-6">
         <Textarea
           className="min-h-40"
           value={report.content}
           onChange={(event) => onChange(event.target.value)}
         />
         {showTranscript && (
-          <p className="rounded-md bg-muted p-2 text-xs text-muted-foreground">
+          <p className="rounded-md bg-muted p-2 text-sm text-muted-foreground">
             {report.transcript}
           </p>
         )}
-        <div className="flex flex-col gap-2 rounded-md border p-3 text-xs">
+        <div className="flex flex-col gap-6 rounded-md border p-4 text-base">
           <div className="flex items-center justify-between gap-2">
             <span className="text-muted-foreground">Zeitstempel</span>
             <span className="tabular-nums">
@@ -580,13 +608,15 @@ function ReportDetail({
                 onChangeVorgangstyp(next === NO_VORGANGSTYP_VALUE ? null : next)
               }
             >
-              <SelectTrigger aria-label="Vorgangstyp auswählen">
+              <SelectTrigger aria-label="Vorgangstyp auswählen" className="w-48">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent position="popper">
-                <SelectItem value={NO_VORGANGSTYP_VALUE}>Keine Auswahl</SelectItem>
+                <SelectItem value={NO_VORGANGSTYP_VALUE} className="min-h-12 text-base">
+                  Keine Auswahl
+                </SelectItem>
                 {VORGANGSTYPEN.map((name) => (
-                  <SelectItem key={name} value={name}>
+                  <SelectItem key={name} value={name} className="min-h-12 text-base">
                     {name}
                   </SelectItem>
                 ))}
@@ -598,7 +628,7 @@ function ReportDetail({
             <Input
               aria-label="Ort"
               placeholder="Ort eingeben"
-              className="w-40"
+              className="w-48"
               value={report.location}
               onChange={(event) => onChangeLocation(event.target.value)}
             />
@@ -607,12 +637,12 @@ function ReportDetail({
         <PhotoAttachments photos={report.attachments} onChange={onChangeAttachments} />
         <div className="flex items-center justify-between gap-2">
           <Button
-            size="icon-lg"
             variant={showTranscript ? "default" : "outline"}
+            className="size-14"
             aria-label="Transkript"
             onClick={() => setShowTranscript((current) => !current)}
           >
-            <FileTextIcon />
+            <FileTextIcon className="size-7" />
           </Button>
           <div className="flex gap-2">
             <Button variant="destructive" onClick={onDelete}>
@@ -632,47 +662,26 @@ function ReportDetail({
 
 function Schedule() {
   return (
-    <div className="flex flex-col gap-4">
-      <Card>
-        <CardContent>
-          <div className="h-80 overflow-auto">
-            <div
-              className="flex w-max min-w-full"
-              style={{ height: HOURS.length * HOUR_HEIGHT_PX }}
-            >
-              <div className="sticky left-0 z-10 w-12 shrink-0 bg-card">
-                {HOURS.map((hour) => (
-                  <div
-                    key={hour}
-                    className="border-t text-xs text-muted-foreground"
-                    style={{ height: HOUR_HEIGHT_PX }}
-                  >
-                    {hour}:00
-                  </div>
-                ))}
-              </div>
-              <div className="relative min-w-[24rem] flex-1">
-                {APPOINTMENTS.map((appointment) => (
-                  <div
-                    key={appointment.title}
-                    className={
-                      appointment.own
-                        ? "absolute left-0 w-[48%] rounded-md border border-destructive bg-destructive/10 p-1 text-xs text-destructive"
-                        : "absolute right-0 w-[48%] rounded-md border border-green-600 bg-green-600/10 p-1 text-xs text-green-700"
-                    }
-                    style={{
-                      top: (appointment.startHour - HOURS[0]!) * HOUR_HEIGHT_PX,
-                      height: appointment.durationHours * HOUR_HEIGHT_PX,
-                    }}
-                  >
-                    {appointment.title}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3">
+        <h2 className="text-base font-medium">Termine heute</h2>
+        {[...APPOINTMENTS]
+          .sort((a, b) => a.startHour - b.startHour)
+          .map((appointment) => (
+            <Item key={appointment.title} variant="outline">
+              <span className="w-14 shrink-0 text-base font-medium tabular-nums">
+                {formatHour(appointment.startHour)}
+              </span>
+              <ItemContent>
+                <ItemTitle>{appointment.title}</ItemTitle>
+                <ItemDescription>
+                  bis {formatHour(appointment.startHour + appointment.durationHours)} Uhr ·{" "}
+                  {appointment.own ? "Eigener Termin" : "Fremdgewerk"}
+                </ItemDescription>
+              </ItemContent>
+            </Item>
+          ))}
+      </div>
 
       <TodoList />
     </div>
@@ -704,10 +713,10 @@ function TodoList() {
       <CardHeader>
         <CardTitle>Aufgabenliste</CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        <ul className="flex flex-col gap-2">
+      <CardContent className="flex flex-col gap-5">
+        <ul className="flex flex-col gap-3">
           {todos.map((todo) => (
-            <li key={todo.id} className="flex items-center gap-2 text-sm">
+            <li key={todo.id} className="flex min-h-12 items-center gap-3 text-base">
               <Checkbox
                 id={`todo-${todo.id}`}
                 checked={todo.done}
@@ -730,7 +739,7 @@ function TodoList() {
             </li>
           ))}
           {todos.length === 0 && (
-            <p className="text-xs text-muted-foreground">Keine To-dos vorhanden.</p>
+            <p className="text-sm text-muted-foreground">Keine To-dos vorhanden.</p>
           )}
         </ul>
 
