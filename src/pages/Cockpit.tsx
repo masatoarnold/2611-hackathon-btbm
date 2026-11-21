@@ -13,6 +13,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -75,15 +82,16 @@ const AUFGABEN_MOCK = [
   { id: "a-4", titel: "Winterbaumaßnahmen ab 29.11. planen" },
 ];
 
+const KEINE_AUSWAHL = "keine-auswahl";
 const PHASEN = [
   "Einrichtung",
   "Rohbau",
   "Dach/Fassade",
   "Ausbau",
-  "Tec Ausrüstung",
+  "Ausrüstung",
   "Außenanlagen",
 ];
-const GEWERKE = ["Betonarbeiten", "Maurerarbeiten", "Stahlbau", "Holzbau", "Abdichtung"];
+const GEWERKE = ["Betonarbeiten", "Mauerarbeiten", "Stahlbau", "Holzbau", "Abdichtung"];
 
 type Lieferant = { id: string; titel: string; beschreibung: string; vorschau?: string };
 
@@ -218,33 +226,6 @@ function MeldungsListe({
         );
       })}
     </section>
-  );
-}
-
-function AuswahlLeiste({
-  optionen,
-  aktiv,
-  onSelect,
-  size,
-}: {
-  optionen: string[];
-  aktiv: string;
-  onSelect: (option: string) => void;
-  size: "sm" | "default";
-}) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {optionen.map((option) => (
-        <Button
-          key={option}
-          size={size}
-          variant={aktiv === option ? "secondary" : "outline"}
-          onClick={() => onSelect(option)}
-        >
-          {option}
-        </Button>
-      ))}
-    </div>
   );
 }
 
@@ -414,7 +395,7 @@ export function Cockpit() {
         </Card>
 
         <div className="flex min-h-0 flex-col gap-4">
-          <div className="grid h-64 shrink-0 grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4">
+          <div className="grid h-44 shrink-0 grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4">
             <Card className="min-h-0 overflow-hidden">
               <CardHeader>
                 <CardTitle>
@@ -523,45 +504,52 @@ export function Cockpit() {
 
           <Card className="min-h-0 flex-1 overflow-hidden">
             <Tabs
-              defaultValue="lieferungen"
+              defaultValue="vertraege"
               className="flex h-full min-h-0 flex-col gap-(--card-spacing)"
             >
               <CardHeader className="shrink-0">
                 <TabsList className="w-auto">
-                  <TabsTrigger value="lieferungen">Lieferungen</TabsTrigger>
-                  <TabsTrigger value="subunternehmer">Subunternehmer</TabsTrigger>
+                  <TabsTrigger value="vertraege">Verträge</TabsTrigger>
                   <TabsTrigger value="bauplaene">Baupläne</TabsTrigger>
+                  <TabsTrigger value="lieferungen">Lieferungen</TabsTrigger>
                 </TabsList>
               </CardHeader>
               <CardContent className="min-h-0 flex-1 overflow-y-auto">
-                <TabsContent value="lieferungen" className="flex flex-col gap-3">
-                  <AuswahlLeiste
-                    optionen={PHASEN}
-                    aktiv={aktivePhase}
-                    onSelect={setAktivePhase}
-                    size="default"
-                  />
-                  <AuswahlLeiste
-                    optionen={GEWERKE}
-                    aktiv={aktivesGewerk}
-                    onSelect={setAktivesGewerk}
-                    size="sm"
-                  />
-                  <div className="grid h-72 grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4">
+                <TabsContent
+                  value="vertraege"
+                  className="grid h-full min-h-0 grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4"
+                >
                     <div className="flex min-h-0 flex-col gap-3">
                       <div className="flex gap-2">
                         <Input placeholder="Stichwortsuche" aria-label="Stichwortsuche" />
-                        <Button variant="outline" onClick={() => vertragsInput.current?.click()}>
-                          Vertrag hinzufügen
-                        </Button>
-                        <input
-                          ref={vertragsInput}
-                          type="file"
-                          accept=".pdf,.doc,.docx"
-                          className="hidden"
-                          onChange={vertragHinzufuegen}
-                        />
+                        <Select value={aktivePhase} onValueChange={setAktivePhase}>
+                          <SelectTrigger aria-label="Phase" className="w-40 shrink-0">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={KEINE_AUSWAHL}>Keine Auswahl</SelectItem>
+                            {PHASEN.map((phase) => (
+                              <SelectItem key={phase} value={phase}>
+                                {phase}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select value={aktivesGewerk} onValueChange={setAktivesGewerk}>
+                          <SelectTrigger aria-label="Gewerk" className="w-40 shrink-0">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={KEINE_AUSWAHL}>Keine Auswahl</SelectItem>
+                            {GEWERKE.map((gewerk) => (
+                              <SelectItem key={gewerk} value={gewerk}>
+                                {gewerk}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
+                      <div className="flex min-h-0 flex-1 flex-col gap-3 rounded-md border p-3">
                       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
                         {lieferanten.map(({ id, titel, beschreibung }) => (
                           <button
@@ -580,11 +568,30 @@ export function Cockpit() {
                                 </span>
                               )}
                             </div>
-                            {beschreibung && (
+                            <div className="flex size-10 shrink-0 items-center justify-center rounded-md border">
                               <FileTextIcon className="size-6 text-muted-foreground" />
-                            )}
+                            </div>
                           </button>
                         ))}
+                      </div>
+                      <Separator />
+                      <div className="flex justify-center">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          aria-label="Vertrag hinzufügen"
+                          onClick={() => vertragsInput.current?.click()}
+                        >
+                          <PlusIcon />
+                        </Button>
+                        <input
+                          ref={vertragsInput}
+                          type="file"
+                          accept=".pdf,.doc,.docx"
+                          className="hidden"
+                          onChange={vertragHinzufuegen}
+                        />
+                      </div>
                       </div>
                     </div>
                     <div className="flex min-h-0 flex-col gap-2 overflow-y-auto rounded-md border p-3">
@@ -598,15 +605,14 @@ export function Cockpit() {
                         </>
                       )}
                     </div>
-                  </div>
-                </TabsContent>
-                <TabsContent value="subunternehmer" className="flex flex-col gap-2">
-                  {SUBUNTERNEHMER_MOCK.map(({ id, titel, status }) => (
-                    <ListenEintrag key={id} titel={titel} status={status} />
-                  ))}
                 </TabsContent>
                 <TabsContent value="bauplaene" className="flex flex-col gap-2">
                   {BAUPLAENE_MOCK.map(({ id, titel, status }) => (
+                    <ListenEintrag key={id} titel={titel} status={status} />
+                  ))}
+                </TabsContent>
+                <TabsContent value="lieferungen" className="flex flex-col gap-2">
+                  {SUBUNTERNEHMER_MOCK.map(({ id, titel, status }) => (
                     <ListenEintrag key={id} titel={titel} status={status} />
                   ))}
                 </TabsContent>
