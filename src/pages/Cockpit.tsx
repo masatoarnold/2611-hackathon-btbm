@@ -1,8 +1,9 @@
 import { useRef, useState, type ChangeEvent } from "react";
-import { CheckIcon, EyeIcon, MailIcon, PlusIcon, XIcon } from "lucide-react";
+import { CheckIcon, EyeIcon, MailIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
 
 import { CockpitHeader } from "@/components/CockpitHeader";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -24,7 +25,6 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { alsPdfHerunterladen, alsWordHerunterladen } from "@/lib/export";
 import { MailDialog } from "@/pages/Cockpit_Meldung_Workflow";
-import { Schedule } from "@/pages/Satellite";
 
 // Mock-Daten (fiktives Projekt Wohnanlage Lindenhof, Haus B), bis die Anbindung steht
 const MELDUNGSDATUM = "21.11.26";
@@ -89,14 +89,7 @@ const MELDUNGEN_ABGESCHLOSSEN_MOCK = [
 ];
 
 const KEINE_AUSWAHL = "keine-auswahl";
-const PHASEN = [
-  "Einrichtung",
-  "Rohbau",
-  "Dach/Fassade",
-  "Ausbau",
-  "Ausrüstung",
-  "Außenanlagen",
-];
+const PHASEN = ["Einrichtung", "Rohbau", "Dach/Fassade", "Ausbau", "Ausrüstung", "Außenanlagen"];
 const GEWERKE = ["Betonarbeiten", "Mauerarbeiten", "Stahlbau", "Holzbau", "Abdichtung"];
 
 type Lieferant = { id: string; titel: string; beschreibung: string; vorschau?: string };
@@ -144,6 +137,26 @@ const BAUPLAENE_MOCK = [
   { id: "b-4", titel: "Abdichtungsdetail Kellerwand", status: "in Prüfung" },
 ];
 
+const TERMINE_HEUTE_MOCK = [
+  { id: "t-1", titel: "Meeting Bauherr", startStunde: 8, dauerStunden: 1.5, eigen: true },
+  { id: "t-2", titel: "Parkettierung", startStunde: 8.5, dauerStunden: 2.5, eigen: false },
+  { id: "t-3", titel: "Abnahme Rohbau", startStunde: 10.5, dauerStunden: 1, eigen: true },
+  { id: "t-4", titel: "Glaslieferung", startStunde: 13, dauerStunden: 1, eigen: false },
+];
+
+const AUFGABEN_MOCK = [
+  { id: 1, titel: "Betonpumpe Abschnitt B prüfen", erledigt: false },
+  { id: 2, titel: "Lieferschein Glas unterschreiben", erledigt: true },
+  { id: 3, titel: "Abnahmeprotokoll Rohbau erstellen", erledigt: false },
+  { id: 4, titel: "Sicherheitseinweisung Parkettierer", erledigt: true },
+  { id: 5, titel: "Baustrom Container 2 kontrollieren", erledigt: false },
+];
+
+const formatUhrzeit = (stunde: number) => {
+  const gesamtMinuten = Math.round(stunde * 60);
+  return `${String(Math.floor(gesamtMinuten / 60)).padStart(2, "0")}:${String(gesamtMinuten % 60).padStart(2, "0")}`;
+};
+
 /** Round, tinted icon buttons: green confirms, red removes. */
 const ICON_GRUEN = "bg-green-100 text-green-700 hover:bg-green-200 hover:text-green-800";
 const ICON_ROT = "bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700";
@@ -154,6 +167,119 @@ function ListenEintrag({ titel, status }: { titel: string; status: string }) {
       <span>{titel}</span>
       <span className="shrink-0 text-xs text-muted-foreground">{status}</span>
     </div>
+  );
+}
+
+function TermineListe() {
+  return (
+    <Card className="flex min-h-0 flex-col overflow-hidden">
+      <CardHeader className="shrink-0">
+        <CardTitle>Termine heute</CardTitle>
+      </CardHeader>
+      <ScrollArea className="min-h-0 flex-1">
+        <CardContent className="flex flex-col gap-2">
+          {TERMINE_HEUTE_MOCK.map(({ id, titel, startStunde, dauerStunden, eigen }) => (
+            <div key={id} className="flex items-center gap-3 rounded-xl bg-background p-3">
+              <span className="w-14 shrink-0 text-sm font-medium tabular-nums">
+                {formatUhrzeit(startStunde)}
+              </span>
+              <div className="flex min-w-0 flex-col">
+                <span className="text-sm">{titel}</span>
+                <span className="text-xs text-muted-foreground">
+                  bis {formatUhrzeit(startStunde + dauerStunden)} Uhr ·{" "}
+                  {eigen ? "Eigener Termin" : "Fremdgewerk"}
+                </span>
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </ScrollArea>
+    </Card>
+  );
+}
+
+function AufgabenListe() {
+  const [aufgaben, setAufgaben] = useState(AUFGABEN_MOCK);
+  const [neueAufgabe, setNeueAufgabe] = useState("");
+
+  const aufgabeUmschalten = (id: number) =>
+    setAufgaben((aktuell) =>
+      aktuell.map((aufgabe) =>
+        aufgabe.id === id ? { ...aufgabe, erledigt: !aufgabe.erledigt } : aufgabe,
+      ),
+    );
+
+  const aufgabeLoeschen = (id: number) =>
+    setAufgaben((aktuell) => aktuell.filter((aufgabe) => aufgabe.id !== id));
+
+  const aufgabeHinzufuegen = () => {
+    const titel = neueAufgabe.trim();
+    if (!titel) return;
+    setAufgaben((aktuell) => [...aktuell, { id: Date.now(), titel, erledigt: false }]);
+    setNeueAufgabe("");
+  };
+
+  return (
+    <Card className="flex min-h-0 flex-col overflow-hidden">
+      <CardHeader className="shrink-0">
+        <CardTitle>Aufgabenliste</CardTitle>
+      </CardHeader>
+      <CardContent className="flex min-h-0 flex-1 flex-col gap-3">
+        <ScrollArea className="-mr-3 min-h-0 flex-1">
+          <ul className="flex flex-col gap-2 pr-3">
+            {aufgaben.map(({ id, titel, erledigt }) => (
+              <li key={id} className="flex items-start gap-3 rounded-xl bg-background p-3">
+                <Checkbox
+                  id={`aufgabe-${id}`}
+                  className="mt-0.5"
+                  checked={erledigt}
+                  onCheckedChange={() => aufgabeUmschalten(id)}
+                />
+                <label
+                  htmlFor={`aufgabe-${id}`}
+                  className={`flex-1 text-sm ${erledigt ? "text-muted-foreground line-through" : ""}`}
+                >
+                  {titel}
+                </label>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`${titel} löschen`}
+                  onClick={() => aufgabeLoeschen(id)}
+                >
+                  <Trash2Icon />
+                </Button>
+              </li>
+            ))}
+            {aufgaben.length === 0 && (
+              <p className="text-sm text-muted-foreground">Keine Aufgaben vorhanden.</p>
+            )}
+          </ul>
+        </ScrollArea>
+        <form
+          className="flex shrink-0 items-center gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            aufgabeHinzufuegen();
+          }}
+        >
+          <Input
+            placeholder="Neue Aufgabe…"
+            aria-label="Neue Aufgabe"
+            value={neueAufgabe}
+            onChange={(event) => setNeueAufgabe(event.target.value)}
+          />
+          <Button
+            type="submit"
+            size="icon"
+            aria-label="Aufgabe hinzufügen"
+            disabled={!neueAufgabe.trim()}
+          >
+            <PlusIcon />
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -182,9 +308,7 @@ function MeldungsListe({
     <section className="flex flex-col gap-2">
       <h2 className="text-sm font-semibold text-primary">{ueberschrift}</h2>
       <Separator />
-      {meldungen.length === 0 && (
-        <p className="text-sm text-muted-foreground">Keine Meldungen.</p>
-      )}
+      {meldungen.length === 0 && <p className="text-sm text-muted-foreground">Keine Meldungen.</p>}
       {meldungen.map((meldung) => {
         const { id, titel, beschreibung } = meldung;
         const aufgeklappt = aufgeklappteId === id;
@@ -354,42 +478,39 @@ export function Cockpit() {
                 </TabsList>
               </CardHeader>
               <CardContent className="min-h-0 flex-1 overflow-y-auto">
-                <TabsContent
-                  value="vertraege"
-                  className="flex h-full min-h-0 flex-col"
-                >
-                    <div className="flex min-h-0 flex-col gap-3">
-                      <div className="flex gap-2">
-                        <Input placeholder="Stichwortsuche" aria-label="Stichwortsuche" />
-                        <Select value={aktivePhase} onValueChange={setAktivePhase}>
-                          <SelectTrigger aria-label="Phase" className="w-40 shrink-0">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={KEINE_AUSWAHL}>Keine Auswahl</SelectItem>
-                            {PHASEN.map((phase) => (
-                              <SelectItem key={phase} value={phase}>
-                                {phase}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Select value={aktivesGewerk} onValueChange={setAktivesGewerk}>
-                          <SelectTrigger aria-label="Gewerk" className="w-40 shrink-0">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={KEINE_AUSWAHL}>Keine Auswahl</SelectItem>
-                            {GEWERKE.map((gewerk) => (
-                              <SelectItem key={gewerk} value={gewerk}>
-                                {gewerk}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="flex min-h-0 flex-1 flex-col gap-2">
-                      <ScrollArea className="min-h-0 flex-1">
+                <TabsContent value="vertraege" className="flex h-full min-h-0 flex-col">
+                  <div className="flex min-h-0 flex-col gap-3">
+                    <div className="flex gap-2">
+                      <Input placeholder="Stichwortsuche" aria-label="Stichwortsuche" />
+                      <Select value={aktivePhase} onValueChange={setAktivePhase}>
+                        <SelectTrigger aria-label="Phase" className="w-40 shrink-0">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={KEINE_AUSWAHL}>Keine Auswahl</SelectItem>
+                          {PHASEN.map((phase) => (
+                            <SelectItem key={phase} value={phase}>
+                              {phase}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select value={aktivesGewerk} onValueChange={setAktivesGewerk}>
+                        <SelectTrigger aria-label="Gewerk" className="w-40 shrink-0">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={KEINE_AUSWAHL}>Keine Auswahl</SelectItem>
+                          {GEWERKE.map((gewerk) => (
+                            <SelectItem key={gewerk} value={gewerk}>
+                              {gewerk}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex min-h-0 flex-1 flex-col gap-2">
+                      <ScrollArea className="-mr-3 min-h-0 flex-1">
                         <div className="flex flex-col gap-2 pr-3">
                           {lieferanten.map(({ id, titel, beschreibung }) => (
                             <div
@@ -434,8 +555,8 @@ export function Cockpit() {
                           onChange={vertragHinzufuegen}
                         />
                       </div>
-                      </div>
                     </div>
+                  </div>
                 </TabsContent>
                 <TabsContent value="bauplaene" className="flex flex-col gap-2">
                   {BAUPLAENE_MOCK.map(({ id, titel, status }) => (
@@ -452,11 +573,10 @@ export function Cockpit() {
           </Card>
         </div>
 
-        <ScrollArea className="min-h-0">
-          <div className="pr-3 text-sm [&_[data-slot=item]]:gap-2 [&_[data-slot=item]]:p-2.5 [&_[data-slot=item-description]]:text-xs [&_li]:min-h-9 [&_ul]:gap-1.5 [&_h2]:text-sm [&>div]:gap-4">
-            <Schedule />
-          </div>
-        </ScrollArea>
+        <div className="grid min-h-0 grid-rows-[minmax(0,1fr)_minmax(0,1fr)] gap-4">
+          <TermineListe />
+          <AufgabenListe />
+        </div>
       </main>
 
       <Dialog
@@ -517,10 +637,16 @@ export function Cockpit() {
             </article>
           </ScrollArea>
           <DialogFooter className="sm:justify-start">
-            <Button variant="outline" onClick={() => alsPdfHerunterladen(berichtTitel, berichtText)}>
+            <Button
+              variant="outline"
+              onClick={() => alsPdfHerunterladen(berichtTitel, berichtText)}
+            >
               PDF
             </Button>
-            <Button variant="outline" onClick={() => alsWordHerunterladen(berichtTitel, berichtText)}>
+            <Button
+              variant="outline"
+              onClick={() => alsWordHerunterladen(berichtTitel, berichtText)}
+            >
               Word
             </Button>
             <Button variant="outline" onClick={() => setMailOffen(true)}>
