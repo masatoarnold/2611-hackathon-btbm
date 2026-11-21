@@ -31,6 +31,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { alsPdfHerunterladen, alsWordHerunterladen } from "@/lib/export";
+import { anzeigeTitel, useMeldungen, type Meldung } from "@/lib/meldungen";
 import { MailDialog } from "@/pages/Cockpit_Meldung_Workflow";
 
 // Mock-Daten (fiktives Projekt Wohnanlage Lindenhof, Haus B), bis die Anbindung steht
@@ -59,41 +60,6 @@ type BerichtAbschnitt = { titel: string; text: string };
 
 const berichtAlsText = (abschnitte: BerichtAbschnitt[]) =>
   abschnitte.map(({ titel, text }) => `${titel}\n${text}`).join("\n\n");
-
-const MELDUNGEN_ANSTEHEND_MOCK = [
-  {
-    id: "m-1",
-    titel: "Meldung: Betonpumpe defekt",
-    beschreibung:
-      "Autobetonpumpe in Abschnitt B um 08:15 ausgefallen (Hydraulikschlauch geplatzt). Ersatzpumpe von Brandl Betonpumpen ab 10:30 im Einsatz.",
-  },
-  {
-    id: "m-2",
-    titel: "Meldung: Lieferung verspätet",
-    beschreibung:
-      "Transportbeton C25/30 (10 t) ca. 2 h verspätet, Stau an der Zufahrt Nord. Betonage Abschnitt B verschiebt sich auf 11:45–15:30.",
-  },
-  {
-    id: "m-3",
-    titel: "Meldung: Bewehrungspläne fehlen",
-    beschreibung:
-      "Freigegebene Bewehrungspläne für Abschnitt C liegen noch nicht vor. Beginn verschiebt sich voraussichtlich um 2 Arbeitstage, Behinderungsanzeige vorbereitet.",
-  },
-];
-
-const MELDUNGEN_ABGESCHLOSSEN_MOCK = [
-  {
-    id: "m-4",
-    titel: "Meldung: Kiesmangel",
-    beschreibung: "Kies 0/32 (18 t) für die Sauberkeitsschicht um 08:05 nachgeliefert.",
-  },
-  {
-    id: "m-5",
-    titel: "Meeting: Baubesprechung Nr. 14",
-    beschreibung:
-      "Baubesprechung mit dem Bauherrn am 19.11.: Abdichtung Kellerwände und Grundwasserstand besprochen. Protokoll an alle Teilnehmer versendet.",
-  },
-];
 
 const TERMINE_MOCK = [
   { id: "t-1", titel: "Abstimmung Betonlieferant, 10:15" },
@@ -177,8 +143,6 @@ function ListenEintrag({ titel, status }: { titel: string; status: string }) {
   );
 }
 
-type Meldung = { id: string; titel: string; beschreibung: string };
-
 const MELDUNG_WORKFLOW_PFAD = "/cockpit/meldung";
 
 function MeldungsListe({
@@ -206,7 +170,9 @@ function MeldungsListe({
         <p className="text-sm text-muted-foreground">Keine Meldungen.</p>
       )}
       {meldungen.map((meldung) => {
-        const { id, titel, beschreibung } = meldung;
+        const { id, content, attachments } = meldung;
+        const titel = anzeigeTitel(meldung);
+        const bilder = attachments.filter((anhang) => anhang.typ === "bild" && anhang.url);
         const aufgeklappt = aufgeklappteId === id;
         return (
           <div key={id} className="flex flex-col gap-3 rounded-xl bg-background p-3.5">
@@ -233,7 +199,21 @@ function MeldungsListe({
             </div>
             {aufgeklappt && (
               <>
-                <p className="text-sm text-muted-foreground">{beschreibung}</p>
+                <p className="text-sm whitespace-pre-line text-muted-foreground">{content}</p>
+                {bilder.length > 0 && (
+                  <ul className="grid grid-cols-3 gap-2">
+                    {bilder.map((bild) => (
+                      <li key={bild.id}>
+                        <img
+                          src={bild.url}
+                          alt={bild.name}
+                          loading="lazy"
+                          className="aspect-square w-full rounded-md border object-cover"
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 <div className="flex justify-end gap-1">
                   {mitAktionen && (
                     <>
@@ -258,7 +238,9 @@ function MeldungsListe({
                     </>
                   )}
                   <Button variant="outline" asChild>
-                    <a href={MELDUNG_WORKFLOW_PFAD}>Bearbeiten</a>
+                    <a href={`${MELDUNG_WORKFLOW_PFAD}?id=${encodeURIComponent(id)}`}>
+                      Bearbeiten
+                    </a>
                   </Button>
                 </div>
               </>
@@ -356,8 +338,9 @@ export function Cockpit() {
   const [aktivesGewerk, setAktivesGewerk] = useState(GEWERKE[1] ?? "");
   const [ausgewaehlterLieferantId, setAusgewaehlterLieferantId] = useState<string | null>("l-1");
 
-  const [anstehend, setAnstehend] = useState<Meldung[]>(MELDUNGEN_ANSTEHEND_MOCK);
-  const [abgeschlossen, setAbgeschlossen] = useState<Meldung[]>(MELDUNGEN_ABGESCHLOSSEN_MOCK);
+  const { meldungen, fehler: meldungenFehler, aendere: aendereMeldung } = useMeldungen();
+  const anstehend = meldungen.filter(({ status }) => status === "anstehend");
+  const abgeschlossen = meldungen.filter(({ status }) => status === "abgeschlossen");
   const [termine, setTermine] = useState(TERMINE_MOCK);
   const [aufgaben, setAufgaben] = useState<Aufgabe[]>(() =>
     AUFGABEN_MOCK,
@@ -378,13 +361,11 @@ export function Cockpit() {
   const toggleMeldung = (id: string) =>
     setAufgeklappteMeldungId((aktuell) => (aktuell === id ? null : id));
 
-  const meldungErledigen = (meldung: Meldung) => {
-    setAnstehend((aktuell) => aktuell.filter(({ id }) => id !== meldung.id));
-    setAbgeschlossen((aktuell) => [meldung, ...aktuell]);
-  };
+  const meldungErledigen = (meldung: Meldung) =>
+    aendereMeldung(meldung.id, { status: "abgeschlossen" }, { sofort: true });
 
   const meldungAblehnen = (meldung: Meldung) =>
-    setAnstehend((aktuell) => aktuell.filter(({ id }) => id !== meldung.id));
+    aendereMeldung(meldung.id, { status: "abgelehnt" }, { sofort: true });
 
   const eintragHinzufuegen = (titel: string) => {
     const id = crypto.randomUUID();
@@ -418,6 +399,7 @@ export function Cockpit() {
           </CardHeader>
           <ScrollArea className="min-h-0 flex-1">
             <CardContent className="flex flex-col gap-6">
+              {meldungenFehler && <p className="text-sm text-destructive">{meldungenFehler}</p>}
               <MeldungsListe
                 ueberschrift="Anstehend"
                 meldungen={anstehend}

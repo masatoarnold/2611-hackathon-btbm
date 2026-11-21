@@ -6,6 +6,7 @@ import {
   ChevronDownIcon,
   FileTextIcon,
   FlagIcon,
+  ImageIcon,
   LoaderCircleIcon,
   MicIcon,
   PlusIcon,
@@ -27,25 +28,22 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  ladeDateiHoch,
+  neueMeldungsId,
+  useMeldungen,
+  type Anhang,
+  type Meldung,
+} from "@/lib/meldungen";
 import { useDictation } from "@/lib/speech";
 import { summarizeTranscript, type ReportSummary } from "@/lib/summarize";
 
-type Report = {
-  id: number;
-  title: string;
-  content: string;
-  transcript: string;
-  priority: number;
-  timestamp: Date;
-  location: string;
-  vorgangstyp: string | null;
-  attachments: string[];
-};
+type Report = Meldung;
 
 type View =
   | { name: "list" }
-  | { name: "new"; id?: number }
-  | { name: "detail"; id: number; from: "list" | "new" };
+  | { name: "new"; id?: string }
+  | { name: "detail"; id: string; from: "list" | "new" };
 
 const VORGANGSTYPEN = ["Meldung", "Besprechungsprotokoll"];
 const NO_VORGANGSTYP_VALUE = "keine-auswahl";
@@ -60,30 +58,8 @@ const PRIORITY_COLORS: Record<number, string> = {
   5: "#8b5cf6",
 };
 
-const INITIAL_REPORTS: Report[] = [
-  {
-    id: 1,
-    title: "Equipment defekt",
-    content: "Betonpumpe an Abschnitt B ausgefallen. Ersatz wurde angefragt.",
-    transcript: "Hier ist die Betonpumpe an Abschnitt B ausgefallen, wir brauchen Ersatz...",
-    priority: 4,
-    timestamp: new Date(2026, 10, 21, 8, 15),
-    location: "Abschnitt B",
-    vorgangstyp: "Meldung",
-    attachments: [],
-  },
-  {
-    id: 2,
-    title: "Lieferverspätung",
-    content: "Betonlieferung 10t verspätet sich um 2 Stunden.",
-    transcript: "Der Betonlieferant hat gerade angerufen, es dauert zwei Stunden länger...",
-    priority: 2,
-    timestamp: new Date(2026, 10, 21, 9, 40),
-    location: "Baustelleneinfahrt",
-    vorgangstyp: null,
-    attachments: [],
-  },
-];
+const formatTimestamp = (iso: string) =>
+  new Date(iso).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" });
 
 const formatDuration = (seconds: number) =>
   `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
@@ -137,20 +113,19 @@ const TOUCH_FRIENDLY_CLASSES = [
 ].join(" ");
 
 export function Satellite() {
-  const [reports, setReports] = useState(INITIAL_REPORTS);
+  const {
+    meldungen: reports,
+    fehler,
+    erstelle: addReport,
+    aendere,
+    loesche: deleteReport,
+  } = useMeldungen();
   const [view, setView] = useState<View>({ name: "list" });
 
-  const addReport = (report: Report) => setReports((current) => [report, ...current]);
-  const updateReport = (id: number, changes: Partial<Omit<Report, "id">>) =>
-    setReports((current) =>
-      current.map((report) => (report.id === id ? { ...report, ...changes } : report)),
-    );
-  const deleteReport = (id: number) =>
-    setReports((current) => current.filter((report) => report.id !== id));
-  const changePriority = (id: number, priority: number) =>
-    setReports((current) =>
-      current.map((report) => (report.id === id ? { ...report, priority } : report)),
-    );
+  /** Typed text is saved after a short pause, everything else right away. */
+  const updateReport = (id: string, changes: Partial<Omit<Report, "id">>) =>
+    aendere(id, changes, { sofort: !("content" in changes || "location" in changes) });
+  const changePriority = (id: string, priority: number) => updateReport(id, { priority });
 
   return (
     <div
@@ -163,6 +138,7 @@ export function Satellite() {
         </TabsList>
 
         <TabsContent value="reports" className="flex flex-1 flex-col">
+          {fehler && <p className="mb-3 text-sm text-destructive">{fehler}</p>}
           {view.name === "list" && (
             <ReportList
               reports={reports}
@@ -174,10 +150,10 @@ export function Satellite() {
           {view.name === "new" && (
             <NewReport
               initialReport={reports.find((report) => report.id === view.id)}
-              onFinish={(report) => {
-                if (view.id === undefined) addReport(report);
-                else updateReport(report.id, report);
-                setView({ name: "detail", id: report.id, from: "new" });
+              onFinish={({ id, ...changes }) => {
+                if (view.id === undefined) addReport({ id, ...changes });
+                else aendere(id, changes, { sofort: true });
+                setView({ name: "detail", id, from: "new" });
               }}
               onCancel={() => setView({ name: "list" })}
             />
@@ -217,8 +193,8 @@ function ReportList({
   onCreate,
 }: {
   reports: Report[];
-  onOpen: (id: number) => void;
-  onChangePriority: (id: number, priority: number) => void;
+  onOpen: (id: string) => void;
+  onChangePriority: (id: string, priority: number) => void;
   onCreate: () => void;
 }) {
   return (
@@ -228,6 +204,12 @@ function ReportList({
           <ItemContent className="cursor-pointer" onClick={() => onOpen(report.id)}>
             <ItemTitle>{report.title}</ItemTitle>
             <ItemDescription>{report.content}</ItemDescription>
+            {report.status === "abgeschlossen" && (
+              <ItemDescription className="flex items-center gap-1">
+                <CheckIcon className="size-4" />
+                Abgeschlossen
+              </ItemDescription>
+            )}
           </ItemContent>
           <ItemActions>
             <PrioritySelect
@@ -323,10 +305,11 @@ function NewReport({
   const isRecording = dictation.status === "recording";
   const [manualText, setManualText] = useState("");
   const [showMetadata, setShowMetadata] = useState(false);
-  const [timestamp] = useState(() => initialReport?.timestamp ?? new Date());
+  const [timestamp] = useState(() => initialReport?.timestamp ?? new Date().toISOString());
   const [location, setLocation] = useState(initialReport?.location ?? "");
   const [priority, setPriority] = useState(initialReport?.priority ?? DEFAULT_PRIORITY);
-  const [attachments, setAttachments] = useState<string[]>(initialReport?.attachments ?? []);
+  const [attachments, setAttachments] = useState<Anhang[]>(initialReport?.attachments ?? []);
+  const [isUploading, setIsUploading] = useState(false);
   const [summary, setSummary] = useState<ReportSummary | null>(null);
   const [summaryError, setSummaryError] = useState<string | null>(null);
 
@@ -351,11 +334,12 @@ function NewReport({
     };
   }, [transcript]);
 
-  const isBusy = dictation.status === "transcribing" || isSummarizing;
+  const isBusy = dictation.status === "transcribing" || isSummarizing || isUploading;
 
   const finish = () =>
     onFinish({
-      id: initialReport?.id ?? Date.now(),
+      id: initialReport?.id ?? neueMeldungsId(),
+      status: initialReport?.status ?? "anstehend",
       title:
         summary?.title ??
         initialReport?.title ??
@@ -460,9 +444,7 @@ function NewReport({
             </div>
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm text-muted-foreground">Zeitstempel</span>
-              <span className="text-base tabular-nums">
-                {timestamp.toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}
-              </span>
+              <span className="text-base tabular-nums">{formatTimestamp(timestamp)}</span>
             </div>
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm text-muted-foreground">Ort</span>
@@ -482,7 +464,11 @@ function NewReport({
         )}
       </div>
 
-      <PhotoAttachments photos={attachments} onChange={setAttachments} />
+      <PhotoAttachments
+        photos={attachments}
+        onChange={setAttachments}
+        onUploadingChange={setIsUploading}
+      />
 
       <StickyActionBar className="justify-end">
         <Button variant="ghost" size="lg" onClick={onCancel}>
@@ -496,33 +482,51 @@ function NewReport({
   );
 }
 
+/** Photos are uploaded to the laptop right after they are picked. */
 function PhotoAttachments({
   photos,
   onChange,
+  onUploadingChange,
 }: {
-  photos: string[];
-  onChange: (photos: string[]) => void;
+  photos: Anhang[];
+  onChange: (photos: Anhang[]) => void;
+  onUploadingChange?: (uploading: boolean) => void;
 }) {
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const [pendingUploads, setPendingUploads] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  // Uploads finish later; append to the photos as they are then, not as they were when picked.
+  const photosRef = useRef(photos);
+  photosRef.current = photos;
 
-  const addPhotos = (event: ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => onUploadingChange?.(pendingUploads > 0), [pendingUploads, onUploadingChange]);
+
+  const addPhotos = async (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files ?? []);
-    const newPhotoUrls = selectedFiles.map((file) => URL.createObjectURL(file));
-    onChange([...photos, ...newPhotoUrls]);
     event.target.value = "";
+    if (selectedFiles.length === 0) return;
+    setUploadError(null);
+    setPendingUploads((count) => count + selectedFiles.length);
+    try {
+      const uploaded = await Promise.all(selectedFiles.map(ladeDateiHoch));
+      onChange([...photosRef.current, ...uploaded]);
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : "Hochladen fehlgeschlagen.");
+    } finally {
+      setPendingUploads((count) => count - selectedFiles.length);
+    }
   };
 
-  const removePhoto = (photoUrl: string) => {
-    URL.revokeObjectURL(photoUrl);
-    onChange(photos.filter((photo) => photo !== photoUrl));
-  };
+  const removePhoto = (id: string) => onChange(photos.filter((photo) => photo.id !== id));
 
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
         <span className="min-w-0 flex-1 pl-4 text-sm break-words text-muted-foreground">
-          {photos.length} Fotos angehängt
+          {pendingUploads > 0
+            ? `${pendingUploads} Foto(s) werden hochgeladen…`
+            : `${photos.length} Fotos angehängt`}
         </span>
         <input
           ref={galleryInputRef}
@@ -559,25 +563,35 @@ function PhotoAttachments({
           <PlusIcon className="size-6" />
         </Button>
       </div>
-      {photos.length > 0 && (
+      {uploadError && <p className="pl-4 text-sm text-destructive">{uploadError}</p>}
+      {(photos.length > 0 || pendingUploads > 0) && (
         <div className="grid grid-cols-3 gap-2">
-          {photos.map((photoUrl) => (
-            <div
-              key={photoUrl}
-              className="relative aspect-square overflow-hidden rounded-md border"
-            >
-              <img src={photoUrl} alt="Angehängtes Foto" className="size-full object-cover" />
+          {photos.map((photo) => (
+            <div key={photo.id} className="relative aspect-square overflow-hidden rounded-md border">
+              {photo.typ === "bild" && photo.url ? (
+                <img src={photo.url} alt={photo.name} className="size-full object-cover" />
+              ) : (
+                <div className="flex size-full flex-col items-center justify-center gap-1 bg-muted p-1 text-center text-xs text-muted-foreground">
+                  {photo.typ === "bild" ? <ImageIcon /> : <FileTextIcon />}
+                  <span className="line-clamp-2">{photo.name}</span>
+                </div>
+              )}
               <Button
                 size="icon-xs"
                 variant="secondary"
                 className="absolute top-1 right-1 rounded-full"
                 aria-label="Foto entfernen"
-                onClick={() => removePhoto(photoUrl)}
+                onClick={() => removePhoto(photo.id)}
               >
                 <XIcon />
               </Button>
             </div>
           ))}
+          {pendingUploads > 0 && (
+            <div className="flex aspect-square items-center justify-center rounded-md border bg-muted">
+              <LoaderCircleIcon className="size-6 animate-spin text-muted-foreground" />
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -600,7 +614,7 @@ function ReportDetail({
   onChange: (content: string) => void;
   onChangeLocation: (location: string) => void;
   onChangeVorgangstyp: (vorgangstyp: string | null) => void;
-  onChangeAttachments: (attachments: string[]) => void;
+  onChangeAttachments: (attachments: Anhang[]) => void;
   onChangePriority: (priority: number) => void;
   onDelete: () => void;
   onConfirm: () => void;
@@ -633,12 +647,7 @@ function ReportDetail({
           <div className="flex flex-col gap-6 rounded-md border p-4 text-base">
             <div className="flex items-center justify-between gap-2">
               <span className="text-muted-foreground">Zeitstempel</span>
-              <span className="tabular-nums">
-                {report.timestamp.toLocaleString("de-DE", {
-                  dateStyle: "short",
-                  timeStyle: "short",
-                })}
-              </span>
+              <span className="tabular-nums">{formatTimestamp(report.timestamp)}</span>
             </div>
             <div className="flex items-center justify-between gap-2">
               <span className="text-muted-foreground">Vorgangstyp</span>

@@ -71,6 +71,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { alsPdfHerunterladen, alsWordHerunterladen } from "@/lib/export";
+import { useMeldungen, type Anhang } from "@/lib/meldungen";
 
 // Mock-Daten (fiktives Projekt Wohnanlage Lindenhof, Haus B), bis die Anbindung steht
 const SUBUNTERNEHMER = [
@@ -161,14 +162,8 @@ async function schlageKeywordsVor(_zusammenfassung: string): Promise<string[]> {
   return KEYWORDS_MOCK.slice(0, MAX_KEYWORDS);
 }
 
-const ANHAENGE = [
-  { name: "Lieferschein_Beton.pdf", beschreibung: "PDF · 240 KB" },
-];
-const BILDER = [
-  "Fahrmischer im Stau, Zufahrt Nord",
-  "Schalung Kellerwand B, betonierbereit",
-  "Foto_Lieferverzug.jpg",
-];
+/** Opened when the page is called without ?id= (seed entry "Lieferung verspätet"). */
+const STANDARD_MELDUNG_ID = "m-2";
 
 const DOKUMENTTYPEN = [
   "Behinderungsanzeige",
@@ -177,18 +172,8 @@ const DOKUMENTTYPEN = [
   "Meetingprotokoll",
 ];
 
-const ZUSAMMENFASSUNG_MOCK =
-  "Die Lieferung Transportbeton C25/30 (10 t) für die Kellerwände Abschnitt B verspätet sich um ca. 2 Stunden. Ursache laut Lieferant: Stau auf der Zufahrt Nord. Die Betonpumpe wurde umdisponiert, der Tiefbau ist informiert. Folge: Betonage Abschnitt B endet erst gegen 15:30, die Kolonne arbeitet bis dahin an der Schalung Abschnitt C weiter. Kein Verzug am kritischen Pfad, sofern die Lieferung bis 12:00 eintrifft.";
-
+/** Previews for contract files; previews of a Meldung's own files come with its attachments. */
 const DATEI_VORSCHAU: Record<string, string> = {
-  "Lieferschein_Beton.pdf":
-    "Lieferschein Nr. 2026-11-4471\nIsar Transportbeton GmbH\n\nBaustelle: Wohnanlage Lindenhof, Haus B\nSorte: C25/30 XC2 F3 16 mm\nMenge: 10,0 m³\nAbfahrt Werk: 09:05\nAnkunft Baustelle: 11:38 (geplant 09:40)\n\nUnterschrift Polier: ________",
-  "Foto_Lieferverzug.jpg":
-    "Foto · 21.11.2026, 09:52\nFahrmischer im Stau an der Zufahrt Nord, Baustelleneinfahrt durch Sperrung blockiert.",
-  "Fahrmischer im Stau, Zufahrt Nord":
-    "Foto · 21.11.2026, 09:52\nAufgenommen vom Polier an der Zufahrt Nord.",
-  "Schalung Kellerwand B, betonierbereit":
-    "Foto · 21.11.2026, 08:30\nSchalung Kellerwand Abschnitt B abgenommen, Bewehrung geprüft.",
   "Preisliste Beton C25-30.pdf":
     "Preisliste 2026 · Isar Transportbeton GmbH\n\nC25/30 XC2 F3 16 mm: 128,00 €/m³\nC30/37 XC4 F3 16 mm: 139,50 €/m³\nZuschlag Winterbeton (< 5 °C): 6,50 €/m³\nWartezeit Fahrmischer ab 30 min: 1,80 €/min\n\nAlle Preise netto, frei Baustelle München.",
   "Versicherungsnachweis 2026.pdf":
@@ -205,9 +190,6 @@ const DOKUMENT_ENTWUERFE: Record<string, string> = {
   Meetingprotokoll:
     "Kurzbesprechung 21.11.2026, 10:15, Baucontainer\nTeilnehmer: Bauleitung, Polier, Isar Transportbeton (telefonisch)\n\n1. Lieferverzug Beton: neue Ankunft ca. 11:40 bestätigt.\n2. Kolonne zieht Schalung Abschnitt C vor.\n3. Betonage B bis 15:30, Nachbehandlung wegen Frostgefahr mit Abdeckung.\n\nNächste Abstimmung: Mo 07:00",
 };
-
-const TRANSKRIPT_MOCK =
-  "Der Betonlieferant hat gerade angerufen. Die Lieferung von 10 t verspätet sich um etwa zwei Stunden.\n\nGrund laut Lieferant: Verkehrsbehinderung auf der Zufahrt zur Baustelle.\n\nIch habe die Betonpumpe in Abschnitt B vorsorglich umdisponiert und den Subunternehmer Tiefbau informiert.";
 
 type ChatNachricht = {
   id: string;
@@ -257,6 +239,8 @@ type Tab = {
   dokumentTyp?: string;
   /** Editable text of a document draft. */
   inhalt?: string;
+  /** Photo or file of the Meldung shown in this tab. */
+  anhang?: Anhang;
 };
 
 type BetroffenerVertrag = {
@@ -265,17 +249,40 @@ type BetroffenerVertrag = {
 };
 
 const dateiTab = (name: string): Tab => ({ id: `datei:${name}`, title: name, typ: "datei" });
+const anhangTab = (anhang: Anhang): Tab => ({
+  id: `anhang:${anhang.id}`,
+  title: anhang.name,
+  typ: "datei",
+  anhang,
+});
 
 /** The text shown in a tab, used for the PDF and Word export. */
-function textVonTab(tab: Tab | undefined) {
+function textVonTab(tab: Tab | undefined, transkript: string) {
   if (!tab) return "";
   if (tab.typ === "dokument") return tab.inhalt ?? "";
-  if (tab.typ === "transkript") return TRANSKRIPT_MOCK;
-  return DATEI_VORSCHAU[tab.title] ?? VERTRAGS_VORSCHAU[tab.title] ?? "";
+  if (tab.typ === "transkript") return transkript;
+  return (
+    tab.anhang?.vorschauText ?? DATEI_VORSCHAU[tab.title] ?? VERTRAGS_VORSCHAU[tab.title] ?? ""
+  );
 }
 
+const anhangBeschreibung = ({ beschreibung, mime }: Anhang) =>
+  beschreibung ?? (mime === "application/pdf" ? "PDF" : (mime ?? "Datei"));
+
 export function CockpitMeldungWorkflow() {
-  const [zusammenfassung, setZusammenfassung] = useState(ZUSAMMENFASSUNG_MOCK);
+  const meldungsId = new URLSearchParams(window.location.search).get("id") ?? STANDARD_MELDUNG_ID;
+  const { meldungen, laedt, fehler, aendere, loesche } = useMeldungen();
+  const meldung = meldungen.find(({ id }) => id === meldungsId);
+  const zusammenfassung = meldung?.content ?? "";
+  const transkript = meldung?.transcript ?? "";
+  const bilder = meldung?.attachments.filter(({ typ }) => typ === "bild") ?? [];
+  const anhaenge = meldung?.attachments.filter(({ typ }) => typ === "datei") ?? [];
+  const vorfallTitel = meldung
+    ? `Vorfall: ${meldung.title}`
+    : laedt
+      ? "Vorfall wird geladen…"
+      : "Vorfall nicht gefunden";
+
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [aktiverTab, setAktiverTab] = useState("");
   const [betroffeneVertraege, setBetroffeneVertraege] = useState<BetroffenerVertrag[]>([]);
@@ -353,7 +360,7 @@ export function CockpitMeldungWorkflow() {
   const aktuellerTab = tabs.find((tab) => tab.id === aktiverTab);
   const mailText = aktuellerTab?.typ === "dokument" && aktuellerTab.inhalt ? aktuellerTab.inhalt : "";
   const exportTitel = aktuellerTab?.title ?? "";
-  const exportText = textVonTab(aktuellerTab);
+  const exportText = textVonTab(aktuellerTab, transkript);
 
   const [chatVerlauf, setChatVerlauf] = useState<ChatNachricht[]>(CHAT_VERLAUF);
   const [chatEingabe, setChatEingabe] = useState("");
@@ -381,7 +388,7 @@ export function CockpitMeldungWorkflow() {
       <div className="grid min-h-0 grid-rows-[3fr_2fr] gap-4">
         <Card className="min-h-0">
           <CardHeader>
-            <CardTitle>Vorfall: Lieferverspätung</CardTitle>
+            <CardTitle>{vorfallTitel}</CardTitle>
             <CardAction>
               <Button variant="ghost" size="sm" asChild>
                 <a href="/cockpit">
@@ -393,31 +400,45 @@ export function CockpitMeldungWorkflow() {
           </CardHeader>
           <ScrollArea className="min-h-0 flex-1">
             <CardContent className="flex flex-col gap-4">
+              {fehler && <p className="text-xs text-destructive">{fehler}</p>}
               <section className="flex flex-col gap-2">
                 <h3 className="text-xs font-medium">Zusammenfassung</h3>
                 <Textarea
                   aria-label="Zusammenfassung"
                   className="min-h-32"
+                  disabled={!meldung}
                   value={zusammenfassung}
-                  onChange={(event) => setZusammenfassung(event.target.value)}
+                  onChange={(event) => aendere(meldungsId, { content: event.target.value })}
                 />
               </section>
 
               <section className="flex flex-col gap-2">
                 <h3 className="text-xs font-medium">Bilder</h3>
+                {bilder.length === 0 && (
+                  <p className="text-xs text-muted-foreground">Keine Bilder.</p>
+                )}
                 <ul className="grid grid-cols-2 gap-2">
-                  {BILDER.map((bild) => (
-                    <li key={bild}>
+                  {bilder.map((bild) => (
+                    <li key={bild.id}>
                       <button
                         type="button"
-                        aria-label={`${bild} öffnen`}
-                        onClick={() => oeffneTab(dateiTab(bild))}
+                        aria-label={`${bild.name} öffnen`}
+                        onClick={() => oeffneTab(anhangTab(bild))}
                         className="flex w-full flex-col gap-1 rounded-md border p-1 text-left hover:bg-muted"
                       >
-                        <div className="flex aspect-video w-full items-center justify-center rounded-sm bg-muted text-muted-foreground">
-                          <ImageIcon />
-                        </div>
-                        <span className="truncate px-1 text-xs">{bild}</span>
+                        {bild.url ? (
+                          <img
+                            src={bild.url}
+                            alt={bild.name}
+                            loading="lazy"
+                            className="aspect-video w-full rounded-sm object-cover"
+                          />
+                        ) : (
+                          <div className="flex aspect-video w-full items-center justify-center rounded-sm bg-muted text-muted-foreground">
+                            <ImageIcon />
+                          </div>
+                        )}
+                        <span className="truncate px-1 text-xs">{bild.name}</span>
                       </button>
                     </li>
                   ))}
@@ -426,20 +447,23 @@ export function CockpitMeldungWorkflow() {
 
               <section className="flex flex-col gap-2">
                 <h3 className="text-xs font-medium">Anhänge</h3>
+                {anhaenge.length === 0 && (
+                  <p className="text-xs text-muted-foreground">Keine Anhänge.</p>
+                )}
                 <ul className="flex flex-col gap-2">
-                  {ANHAENGE.map((anhang) => (
-                    <li key={anhang.name}>
+                  {anhaenge.map((anhang) => (
+                    <li key={anhang.id}>
                       <Attachment size="sm" className="w-full">
                         <AttachmentMedia>
                           <PaperclipIcon />
                         </AttachmentMedia>
                         <AttachmentContent>
                           <AttachmentTitle>{anhang.name}</AttachmentTitle>
-                          <AttachmentDescription>{anhang.beschreibung}</AttachmentDescription>
+                          <AttachmentDescription>{anhangBeschreibung(anhang)}</AttachmentDescription>
                         </AttachmentContent>
                         <AttachmentTrigger
                           aria-label={`${anhang.name} öffnen`}
-                          onClick={() => oeffneTab(dateiTab(anhang.name))}
+                          onClick={() => oeffneTab(anhangTab(anhang))}
                         />
                       </Attachment>
                     </li>
@@ -477,7 +501,10 @@ export function CockpitMeldungWorkflow() {
                   <AlertDialogCancel>Abbrechen</AlertDialogCancel>
                   <AlertDialogAction
                     variant="destructive"
-                    onClick={() => window.location.assign("/cockpit")}
+                    onClick={async () => {
+                      await loesche(meldungsId);
+                      window.location.assign("/cockpit");
+                    }}
                   >
                     Löschen
                   </AlertDialogAction>
@@ -619,6 +646,7 @@ export function CockpitMeldungWorkflow() {
                   )}
                   <TabInhalt
                     tab={tab}
+                    transkript={transkript}
                     onWaehleDokumentTyp={(typ) => setzeDokumentTyp(tab.id, typ)}
                     onAendereInhalt={(inhalt) => setzeInhalt(tab.id, inhalt)}
                     onAbbrechen={() => schliesseTab(tab.id)}
@@ -1147,19 +1175,35 @@ function SubunternehmerEintrag({
 
 function TabInhalt({
   tab,
+  transkript,
   onWaehleDokumentTyp,
   onAendereInhalt,
   onAbbrechen,
 }: {
   tab: Tab;
+  transkript: string;
   onWaehleDokumentTyp: (typ: string) => void;
   onAendereInhalt: (inhalt: string) => void;
   onAbbrechen: () => void;
 }) {
   if (tab.typ === "transkript") {
     return (
-      <div className="rounded-md bg-muted p-3 text-xs whitespace-pre-line">{TRANSKRIPT_MOCK}</div>
+      <div className="rounded-md bg-muted p-3 text-xs whitespace-pre-line">
+        {transkript || "Kein Transkript vorhanden."}
+      </div>
     );
+  }
+
+  const { url, mime, name } = tab.anhang ?? {};
+  if (url && mime?.startsWith("image/")) {
+    return (
+      <div className="flex min-h-0 flex-1 items-center justify-center rounded-md border bg-muted p-2">
+        <img src={url} alt={name} className="max-h-full max-w-full object-contain" />
+      </div>
+    );
+  }
+  if (url) {
+    return <iframe src={url} title={name} className="min-h-0 flex-1 rounded-md border bg-muted" />;
   }
 
   if (tab.typ === "dokument") {
@@ -1175,7 +1219,7 @@ function TabInhalt({
     );
   }
 
-  const vorschau = DATEI_VORSCHAU[tab.title] ?? VERTRAGS_VORSCHAU[tab.title];
+  const vorschau = textVonTab(tab, transkript);
   return vorschau ? (
     <div className="min-h-0 flex-1 overflow-auto rounded-md border bg-muted p-3 text-xs whitespace-pre-line">
       {vorschau}

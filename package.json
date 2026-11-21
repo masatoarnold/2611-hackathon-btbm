@@ -7,6 +7,7 @@
     "dev": "bun --hot src/index.ts",
     "start": "NODE_ENV=production bun src/index.ts",
     "build": "bun run build.ts",
+    "db:reset": "bun -e \"require('node:fs').rmSync('data', { recursive: true, force: true })\"",
     "typecheck": "bun check"
   },
   "dependencies": {
