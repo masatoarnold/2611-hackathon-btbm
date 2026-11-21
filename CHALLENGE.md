@@ -2,14 +2,15 @@
 
 ---
 
-*Working Title*  
+_Working Title_  
 "AI Site Manager Assistant for Documentation, Daily Reports and Claims"
 
-*Problem Statement*  
+_Problem Statement_  
 Site managers spend a large share of their time on documentation, correspondence and formal notices (delay notices, additional cost notices, notices of concern). Analyzing daily site reports, evaluating performance data, detecting deviations and drafting legally sound letters is mostly done manually. These tasks follow similar patterns but require great care and the integration of scattered information (minutes, site diary, emails, photos).
 
-*Challenge Objective*  
+_Challenge Objective_  
 Build an AI assistant that takes operational workload off site managers:
+
 - Voice or text capture of site situations (dictation via mobile)
 - Automatic analysis of daily reports: evaluate performance data, detect deviations from plan
 - Smart drafts for letters (delay, additional cost, defect notices) from a few keywords
@@ -17,7 +18,8 @@ Build an AI assistant that takes operational workload off site managers:
 - Automatic generation of correspondence when deviations are detected
 - Human in the loop: the site manager keeps control over content
 
-*Possible Use Cases*
+_Possible Use Cases_
+
 - Form assistant: site manager enters keywords ("excavator idle since 10 am due to..."), assistant creates the notice in the required format
 - Daily report analysis: evaluate performance data, compare with plan, flag delays
 - Documentation drafts: generate a daily report draft from photos, notes and appointments
@@ -26,6 +28,9 @@ Build an AI assistant that takes operational workload off site managers:
 
 Note: No legal advice, only support in drafting. Final review lies with the site manager/company.
 
-*Deliverables*
+_Deliverables_
+
 - Prototype (chat/voice interface with PDF/Word export)
 - Use case demo: "A day in the life of a site manager with an AI assistant"
+
+You get 2 minutes max for a demo video and a 3 minutes pitch, 7 slides. Focus on the essentials.
