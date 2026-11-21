@@ -1,38 +1,40 @@
-An AI-powered project that helps construction site managers by relating data inputs, especially audio-recorded reports, to timeline-deviations and task-dependencies. The other major component is the automized domain-specific documentation creation via AI. The detailed description is the CHALLENGE.md file.
+Ein KI-gestütztes Projekt, das Bauleiter unterstützt, indem es Dateneingaben, insbesondere sprachaufgezeichnete Berichte, mit Terminabweichungen und Aufgabenabhängigkeiten in Beziehung setzt. Die zweite zentrale Komponente ist die automatisierte, domänenspezifische Erstellung von Dokumentation per KI. Die detaillierte Beschreibung steht in der Datei CHALLENGE.md.
 
-Drafting is done in [Excalidraw](https://excalidraw.com/#room=b389efbaabb7ef2f370f,I3OqvuHKU14NEerZ_Cjr3g)
+Der Entwurf entsteht in [Excalidraw](https://excalidraw.com/#room=b389efbaabb7ef2f370f,I3OqvuHKU14NEerZ_Cjr3g)
 
-UI built on shadcn components.
+Die Oberfläche basiert auf shadcn-Komponenten.
 
-Will be split into a desktop-view (a "cockpit" of sorts, that can monitor everything) and a "satellite" mobile view that is used on-site.
-
----
-
-Features of the cockpit:
-
-- To be determined
-
-Features of the satellite
-
-- To be determined
+Sie wird in eine Desktop-Ansicht (eine Art „Cockpit“, das alles überwachen kann) und eine mobile „Satelliten“-Ansicht für den Einsatz vor Ort aufgeteilt.
 
 ---
 
-## How to run development environment:
+Funktionen des Cockpits:
 
-Install dependencies
+- Noch festzulegen
+
+Funktionen des Satelliten
+
+- Tagesplan
+  - Kalender mit Terminen
+  -
+
+---
+
+## Entwicklungsumgebung starten:
+
+Abhängigkeiten installieren
 
 ```sh
 bun install
 ```
 
-Run web app
+Web-App starten
 
 ```sh
 bun run dev
 ```
 
-Run formatter
+Formatter ausführen
 
 ```sh
 bun run fmt
