@@ -2,6 +2,7 @@ import { useRef, useState, type ChangeEvent } from "react";
 import { CheckIcon, EyeIcon, MailIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
 
 import { CockpitHeader } from "@/components/CockpitHeader";
+import { PriorityFlag } from "@/components/PriorityFlag";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -297,6 +298,13 @@ function AufgabenListe() {
 
 const MELDUNG_WORKFLOW_PFAD = "/cockpit/meldung";
 
+/** Pending reports: most urgent first; reports of equal priority keep the newest on top. */
+const nachPrioritaet = (a: Meldung, b: Meldung) =>
+  b.priority - a.priority || b.timestamp.localeCompare(a.timestamp);
+
+/** Completed reports: chronological, newest first. */
+const nachZeit = (a: Meldung, b: Meldung) => b.timestamp.localeCompare(a.timestamp);
+
 function MeldungsListe({
   ueberschrift,
   meldungen,
@@ -320,7 +328,7 @@ function MeldungsListe({
       <Separator />
       {meldungen.length === 0 && <p className="text-sm text-muted-foreground">Keine Meldungen.</p>}
       {meldungen.map((meldung) => {
-        const { id, content, attachments } = meldung;
+        const { id, content, attachments, priority } = meldung;
         const titel = anzeigeTitel(meldung);
         const bilder = attachments.filter((anhang) => anhang.typ === "bild" && anhang.url);
         const aufgeklappt = aufgeklappteId === id;
@@ -337,6 +345,7 @@ function MeldungsListe({
               >
                 {titel}
               </button>
+              <PriorityFlag priority={priority} />
               <Button
                 variant="ghost"
                 size="icon"
@@ -407,8 +416,10 @@ export function Cockpit() {
   const [offenerVertragId, setOffenerVertragId] = useState<string | null>(null);
 
   const { meldungen, fehler: meldungenFehler, aendere: aendereMeldung } = useMeldungen();
-  const anstehend = meldungen.filter(({ status }) => status === "anstehend");
-  const abgeschlossen = meldungen.filter(({ status }) => status === "abgeschlossen");
+  const anstehend = meldungen.filter(({ status }) => status === "anstehend").sort(nachPrioritaet);
+  const abgeschlossen = meldungen
+    .filter(({ status }) => status === "abgeschlossen")
+    .sort(nachZeit);
   const [berichtAbschnitte, setBerichtAbschnitte] = useState<BerichtAbschnitt[]>(
     TAGESBERICHT.abschnitte,
   );
