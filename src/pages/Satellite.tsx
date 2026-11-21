@@ -5,7 +5,6 @@ import {
   FlagIcon,
   ImageIcon,
   MicIcon,
-  PencilIcon,
   PlusIcon,
   SquareIcon,
   Trash2Icon,
@@ -33,12 +32,12 @@ const TEMPLATES = ["Meldung", "Besprechungsprotokoll"];
 
 const PRIORITIES = [1, 2, 3, 4, 5];
 const DEFAULT_PRIORITY = 3;
-const PRIORITY_COLOR_CLASSES: Record<number, string> = {
-  1: "text-foreground",
-  2: "text-blue-500",
-  3: "text-yellow-500",
-  4: "text-red-500",
-  5: "text-violet-500",
+const PRIORITY_COLORS: Record<number, string> = {
+  1: "var(--foreground)",
+  2: "#3b82f6",
+  3: "#eab308",
+  4: "#ef4444",
+  5: "#8b5cf6",
 };
 
 const INITIAL_REPORTS: Report[] = [
@@ -128,6 +127,7 @@ export function Satellite() {
             <ReportDetail
               report={reports.find((report) => report.id === view.id)}
               onChange={(content) => updateReport(view.id, content)}
+              onChangePriority={(priority) => changePriority(view.id, priority)}
               onDelete={() => {
                 deleteReport(view.id);
                 setView({ name: "list" });
@@ -165,29 +165,10 @@ function ReportList({
             <ItemDescription>{report.content}</ItemDescription>
           </ItemContent>
           <ItemActions>
-            <Select
-              value={String(report.priority)}
-              onValueChange={(value) => onChangePriority(report.id, Number(value))}
-            >
-              <SelectTrigger
-                size="sm"
-                className="w-16 shrink-0 tabular-nums"
-                aria-label="Priorität ändern"
-              >
-                <span className="flex items-center gap-1">
-                  <FlagIcon className={`fill-current ${PRIORITY_COLOR_CLASSES[report.priority]}`} />
-                  {report.priority}
-                </span>
-              </SelectTrigger>
-              <SelectContent position="popper" align="end" className="min-w-0">
-                {PRIORITIES.map((priority) => (
-                  <SelectItem key={priority} value={String(priority)} className="pr-7">
-                    <FlagIcon className={`fill-current ${PRIORITY_COLOR_CLASSES[priority]}`} />
-                    {priority}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <PrioritySelect
+              value={report.priority}
+              onChange={(priority) => onChangePriority(report.id, priority)}
+            />
           </ItemActions>
         </Item>
       ))}
@@ -200,6 +181,43 @@ function ReportList({
         </Button>
       </div>
     </div>
+  );
+}
+
+function PriorityFlag({ priority }: { priority: number }) {
+  const color = PRIORITY_COLORS[priority];
+  return <FlagIcon style={{ color, fill: color, stroke: color }} />;
+}
+
+function PrioritySelect({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (priority: number) => void;
+}) {
+  return (
+    <Select value={String(value)} onValueChange={(next) => onChange(Number(next))}>
+      <SelectTrigger
+        size="sm"
+        hideIcon
+        className="w-11 shrink-0 justify-center tabular-nums"
+        aria-label="Priorität ändern"
+      >
+        <span className="flex items-center gap-1">
+          <PriorityFlag priority={value} />
+          {value}
+        </span>
+      </SelectTrigger>
+      <SelectContent position="popper" align="end" className="min-w-0">
+        {PRIORITIES.map((priority) => (
+          <SelectItem key={priority} value={String(priority)} className="pr-7">
+            <PriorityFlag priority={priority} />
+            {priority}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -301,29 +319,30 @@ function NewReport({
 function ReportDetail({
   report,
   onChange,
+  onChangePriority,
   onDelete,
   onConfirm,
 }: {
   report: Report | undefined;
   onChange: (content: string) => void;
+  onChangePriority: (priority: number) => void;
   onDelete: () => void;
   onConfirm: () => void;
 }) {
-  const [isEditing, setIsEditing] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
 
   if (!report) return null;
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
         <CardTitle>{report.title}</CardTitle>
+        <PrioritySelect value={report.priority} onChange={onChangePriority} />
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <Textarea
           className="min-h-40"
           value={report.content}
-          readOnly={!isEditing}
           onChange={(event) => onChange(event.target.value)}
         />
         {showTranscript && (
@@ -342,7 +361,7 @@ function ReportDetail({
             </div>
           ))}
         </div>
-        <div className="flex justify-between">
+        <div className="flex items-center justify-between gap-2">
           <Button
             size="icon-lg"
             variant={showTranscript ? "default" : "outline"}
@@ -351,20 +370,16 @@ function ReportDetail({
           >
             <FileTextIcon />
           </Button>
-          <Button
-            size="icon-lg"
-            variant={isEditing ? "default" : "outline"}
-            aria-label="Bearbeiten"
-            onClick={() => setIsEditing((current) => !current)}
-          >
-            <PencilIcon />
-          </Button>
-          <Button size="icon-lg" variant="destructive" aria-label="Löschen" onClick={onDelete}>
-            <Trash2Icon />
-          </Button>
-          <Button size="icon-lg" aria-label="Bestätigen" onClick={onConfirm}>
-            <CheckIcon />
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="destructive" onClick={onDelete}>
+              <Trash2Icon />
+              Löschen
+            </Button>
+            <Button onClick={onConfirm}>
+              <CheckIcon />
+              Bestätigen
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
