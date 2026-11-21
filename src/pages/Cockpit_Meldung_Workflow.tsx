@@ -6,10 +6,12 @@ import {
   FileTextIcon,
   FlagIcon,
   ImageIcon,
+  Loader2Icon,
   MailIcon,
   PaperclipIcon,
   RotateCcwIcon,
   SendIcon,
+  SparklesIcon,
   Trash2Icon,
   XIcon,
 } from "lucide-react";
@@ -135,11 +137,28 @@ vertragsIndex.addAll(
   ),
 );
 
+const MAX_KEYWORDS = 5;
+
+/** Simulierte Laufzeit des Modells in Millisekunden. */
+const KEYWORDS_MOCK_LAUFZEIT_MS = 1500;
+
+/** Mock-Keywords für die Vertragssuche. Hier eintragen (maximal MAX_KEYWORDS). */
+const KEYWORDS_MOCK = ["Lieferzeit", "Verspätung", "Beton", "Lieferant", "Wartezeiten"];
+
+/** Simuliert die Keyword-Erzeugung durch ein Modell, bis die Anbindung steht. */
+async function schlageKeywordsVor(_zusammenfassung: string): Promise<string[]> {
+  await new Promise((resolve) => setTimeout(resolve, KEYWORDS_MOCK_LAUFZEIT_MS));
+  return KEYWORDS_MOCK.slice(0, MAX_KEYWORDS);
+}
+
 const ANHAENGE = [
   { name: "Lieferschein_Beton.pdf", beschreibung: "PDF · 240 KB" },
-  { name: "Foto_Lieferverzug.jpg", beschreibung: "Bild · 2,1 MB" },
 ];
-const BILDER = ["Fahrmischer im Stau, Zufahrt Nord", "Schalung Kellerwand B, betonierbereit"];
+const BILDER = [
+  "Fahrmischer im Stau, Zufahrt Nord",
+  "Schalung Kellerwand B, betonierbereit",
+  "Foto_Lieferverzug.jpg",
+];
 
 const DOKUMENTTYPEN = [
   "Behinderungsanzeige",
@@ -300,6 +319,17 @@ export function CockpitMeldungWorkflow() {
 
   const betroffeneNamen = betroffeneVertraege.map((eintrag) => eintrag.vertrag);
 
+  const [keywordsLaden, setKeywordsLaden] = useState(false);
+
+  const keywordsVorschlagen = async () => {
+    setKeywordsLaden(true);
+    try {
+      setVertragsSuche((await schlageKeywordsVor(zusammenfassung)).join(" "));
+    } finally {
+      setKeywordsLaden(false);
+    }
+  };
+
   const gefilterteSubunternehmer = useMemo(() => {
     const suchbegriff = vertragsSuche.trim();
     if (!suchbegriff) return SUBUNTERNEHMER;
@@ -354,22 +384,20 @@ export function CockpitMeldungWorkflow() {
 
             <section className="flex flex-col gap-2">
               <h3 className="text-xs font-medium">Bilder</h3>
-              <ul className="flex flex-col gap-2">
+              <ul className="grid grid-cols-2 gap-2">
                 {BILDER.map((bild) => (
                   <li key={bild}>
-                    <Attachment size="sm" className="w-full">
-                      <AttachmentMedia>
+                    <button
+                      type="button"
+                      aria-label={`${bild} öffnen`}
+                      onClick={() => oeffneTab(dateiTab(bild))}
+                      className="flex w-full flex-col gap-1 rounded-md border p-1 text-left hover:bg-muted"
+                    >
+                      <div className="flex aspect-video w-full items-center justify-center rounded-sm bg-muted text-muted-foreground">
                         <ImageIcon />
-                      </AttachmentMedia>
-                      <AttachmentContent>
-                        <AttachmentTitle>{bild}</AttachmentTitle>
-                        <AttachmentDescription>Bild</AttachmentDescription>
-                      </AttachmentContent>
-                      <AttachmentTrigger
-                        aria-label={`${bild} öffnen`}
-                        onClick={() => oeffneTab(dateiTab(bild))}
-                      />
-                    </Attachment>
+                      </div>
+                      <span className="truncate px-1 text-xs">{bild}</span>
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -459,6 +487,16 @@ export function CockpitMeldungWorkflow() {
               value={vertragsSuche}
               onChange={(event) => setVertragsSuche(event.target.value)}
             />
+            <Button
+              variant="outline"
+              size="sm"
+              className="self-start"
+              disabled={keywordsLaden}
+              onClick={keywordsVorschlagen}
+            >
+              {keywordsLaden ? <Loader2Icon className="animate-spin" /> : <SparklesIcon />}
+              {keywordsLaden ? "Keywords werden erstellt …" : "Keywords vorschlagen"}
+            </Button>
           </CardHeader>
           <CardContent className="min-h-0 flex-1 overflow-y-auto">
             <ul className="flex flex-col gap-2">
