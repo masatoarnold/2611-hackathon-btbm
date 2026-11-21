@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { useDictation } from "@/lib/speech";
 
 type Report = {
   id: number;
@@ -78,6 +79,9 @@ const INITIAL_REPORTS: Report[] = [
     attachments: [],
   },
 ];
+
+const formatDuration = (seconds: number) =>
+  `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 
 const HOURS = Array.from({ length: 10 }, (_, index) => index + 7);
 const HOUR_HEIGHT_PX = 48;
@@ -259,8 +263,11 @@ function NewReport({
   onCancel: () => void;
 }) {
   const [vorgangstyp, setVorgangstyp] = useState<string | null>(initialReport?.vorgangstyp ?? null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [text] = useState("");
+  const [transcript, setTranscript] = useState("");
+  const dictation = useDictation((spoken) =>
+    setTranscript((current) => [current, spoken].filter(Boolean).join(" ")),
+  );
+  const isRecording = dictation.status === "recording";
   const [manualText, setManualText] = useState("");
   const [showMetadata, setShowMetadata] = useState(false);
   const [timestamp] = useState(() => initialReport?.timestamp ?? new Date());
@@ -275,10 +282,10 @@ function NewReport({
         initialReport?.title ??
         (vorgangstyp ? `${vorgangstyp}: Lieferverspätung` : "Lieferverspätung"),
       content:
-        [text, manualText].filter(Boolean).join("\n\n") ||
+        [transcript, manualText].filter(Boolean).join("\n\n") ||
         initialReport?.content ||
         "Automatisch erstellte Zusammenfassung (Mock).",
-      transcript: initialReport?.transcript ?? "Mock-Transkript der Audioaufnahme...",
+      transcript: transcript || initialReport?.transcript || "",
       priority,
       timestamp,
       location,
@@ -294,20 +301,25 @@ function NewReport({
             size="icon-lg"
             variant={isRecording ? "destructive" : "outline"}
             className="size-16 rounded-full"
-            onClick={() => setIsRecording((current) => !current)}
+            aria-label={isRecording ? "Aufnahme beenden" : "Aufnahme starten"}
+            disabled={dictation.status === "transcribing"}
+            onClick={isRecording ? dictation.stop : dictation.start}
           >
             {isRecording ? <SquareIcon className="size-6" /> : <MicIcon className="size-6" />}
           </Button>
-          <span className="text-xs">
-            {isRecording ? "Aufnahme läuft… 00:12" : "Ton aufzeichnen"}
+          <span className="text-xs tabular-nums">
+            {dictation.status === "recording" && `Aufnahme läuft… ${formatDuration(dictation.elapsed)}`}
+            {dictation.status === "transcribing" && "Wird transkribiert…"}
+            {dictation.status === "idle" && "Ton aufzeichnen"}
           </span>
+          {dictation.error && <span className="text-xs text-destructive">{dictation.error}</span>}
         </CardContent>
       </Card>
 
       <Textarea
         placeholder="KI-generierte Zusammenfassung"
         aria-label="KI-generierte Zusammenfassung"
-        value={text}
+        value={transcript}
         readOnly
       />
 
