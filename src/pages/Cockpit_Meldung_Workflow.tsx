@@ -1,4 +1,5 @@
-import { Fragment, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
+import MiniSearch from "minisearch";
 import {
   CheckIcon,
   ChevronDownIcon,
@@ -119,13 +120,33 @@ const VERTRAGS_VORSCHAU: Record<string, string> = Object.fromEntries(
   ),
 );
 
+const vertragsIndex = new MiniSearch<{ id: string; text: string; unternehmer: string }>({
+  fields: ["id", "text", "unternehmer"],
+  storeFields: ["id"],
+  searchOptions: { prefix: true, fuzzy: 0.2, boost: { id: 2 } },
+});
+vertragsIndex.addAll(
+  SUBUNTERNEHMER.flatMap(({ name, vertraege }) =>
+    vertraege.map((vertrag) => ({
+      id: vertrag,
+      text: VERTRAGS_VORSCHAU[vertrag] ?? "",
+      unternehmer: name,
+    })),
+  ),
+);
+
 const ANHAENGE = [
   { name: "Lieferschein_Beton.pdf", beschreibung: "PDF · 240 KB" },
   { name: "Foto_Lieferverzug.jpg", beschreibung: "Bild · 2,1 MB" },
 ];
 const BILDER = ["Fahrmischer im Stau, Zufahrt Nord", "Schalung Kellerwand B, betonierbereit"];
 
-const DOKUMENTTYPEN = ["Behinderungsanzeige", "Tagesbericht", "Bedenkenanzeige", "Meetingprotokoll"];
+const DOKUMENTTYPEN = [
+  "Behinderungsanzeige",
+  "Tagesbericht",
+  "Bedenkenanzeige",
+  "Meetingprotokoll",
+];
 
 const ZUSAMMENFASSUNG_MOCK =
   "Die Lieferung Transportbeton C25/30 (10 t) für die Kellerwände Abschnitt B verspätet sich um ca. 2 Stunden. Ursache laut Lieferant: Stau auf der Zufahrt Nord. Die Betonpumpe wurde umdisponiert, der Tiefbau ist informiert. Folge: Betonage Abschnitt B endet erst gegen 15:30, die Kolonne arbeitet bis dahin an der Schalung Abschnitt C weiter. Kein Verzug am kritischen Pfad, sofern die Lieferung bis 12:00 eintrifft.";
@@ -135,7 +156,8 @@ const DATEI_VORSCHAU: Record<string, string> = {
     "Lieferschein Nr. 2026-11-4471\nIsar Transportbeton GmbH\n\nBaustelle: Wohnanlage Lindenhof, Haus B\nSorte: C25/30 XC2 F3 16 mm\nMenge: 10,0 m³\nAbfahrt Werk: 09:05\nAnkunft Baustelle: 11:38 (geplant 09:40)\n\nUnterschrift Polier: ________",
   "Foto_Lieferverzug.jpg":
     "Foto · 21.11.2026, 09:52\nFahrmischer im Stau an der Zufahrt Nord, Baustelleneinfahrt durch Sperrung blockiert.",
-  "Fahrmischer im Stau, Zufahrt Nord": "Foto · 21.11.2026, 09:52\nAufgenommen vom Polier an der Zufahrt Nord.",
+  "Fahrmischer im Stau, Zufahrt Nord":
+    "Foto · 21.11.2026, 09:52\nAufgenommen vom Polier an der Zufahrt Nord.",
   "Schalung Kellerwand B, betonierbereit":
     "Foto · 21.11.2026, 08:30\nSchalung Kellerwand Abschnitt B abgenommen, Bewehrung geprüft.",
   "Preisliste Beton C25-30.pdf":
@@ -229,6 +251,7 @@ export function CockpitMeldungWorkflow() {
   const [aktiverTab, setAktiverTab] = useState("");
   const [betroffeneVertraege, setBetroffeneVertraege] = useState<BetroffenerVertrag[]>([]);
   const [mailOffen, setMailOffen] = useState(false);
+  const [vertragsSuche, setVertragsSuche] = useState("");
   const [metadaten, setMetadaten] = useState(() => ({
     datum: new Date(),
     deadline: "",
@@ -252,7 +275,12 @@ export function CockpitMeldungWorkflow() {
     setTabs((current) =>
       current.map((tab) =>
         tab.id === id
-          ? { ...tab, dokumentTyp, title: dokumentTyp, inhalt: DOKUMENT_ENTWUERFE[dokumentTyp] ?? "" }
+          ? {
+              ...tab,
+              dokumentTyp,
+              title: dokumentTyp,
+              inhalt: DOKUMENT_ENTWUERFE[dokumentTyp] ?? "",
+            }
           : tab,
       ),
     );
@@ -271,6 +299,16 @@ export function CockpitMeldungWorkflow() {
     setBetroffeneVertraege((current) => current.filter((eintrag) => eintrag.vertrag !== vertrag));
 
   const betroffeneNamen = betroffeneVertraege.map((eintrag) => eintrag.vertrag);
+
+  const gefilterteSubunternehmer = useMemo(() => {
+    const suchbegriff = vertragsSuche.trim();
+    if (!suchbegriff) return SUBUNTERNEHMER;
+    const treffer = new Set(vertragsIndex.search(suchbegriff).map((ergebnis) => ergebnis.id));
+    return SUBUNTERNEHMER.map((unternehmer) => ({
+      ...unternehmer,
+      vertraege: unternehmer.vertraege.filter((vertrag) => treffer.has(vertrag)),
+    })).filter((unternehmer) => unternehmer.vertraege.length > 0);
+  }, [vertragsSuche]);
 
   const aktuellerTab = tabs.find((tab) => tab.id === aktiverTab);
   const mailText = aktuellerTab?.typ === "dokument" && aktuellerTab.inhalt ? aktuellerTab.inhalt : "";
@@ -363,7 +401,9 @@ export function CockpitMeldungWorkflow() {
           <CardFooter className="gap-2">
             <Button
               variant="outline"
-              onClick={() => oeffneTab({ id: "transkript", title: "Transkript", typ: "transkript" })}
+              onClick={() =>
+                oeffneTab({ id: "transkript", title: "Transkript", typ: "transkript" })
+              }
             >
               <FileTextIcon />
               Transkript
@@ -397,7 +437,11 @@ export function CockpitMeldungWorkflow() {
             <Button
               className="ml-auto"
               onClick={() =>
-                oeffneTab({ id: `dokument-${Date.now()}`, title: "Neues Dokument", typ: "dokument" })
+                oeffneTab({
+                  id: `dokument-${Date.now()}`,
+                  title: "Neues Dokument",
+                  typ: "dokument",
+                })
               }
             >
               Dokument erstellen
@@ -408,10 +452,20 @@ export function CockpitMeldungWorkflow() {
         <Card className="min-h-0">
           <CardHeader>
             <CardTitle>Vorgeschlagene Subunternehmer</CardTitle>
+            <Input
+              type="search"
+              aria-label="Verträge durchsuchen"
+              placeholder="Verträge durchsuchen …"
+              value={vertragsSuche}
+              onChange={(event) => setVertragsSuche(event.target.value)}
+            />
           </CardHeader>
           <CardContent className="min-h-0 flex-1 overflow-y-auto">
             <ul className="flex flex-col gap-2">
-              {SUBUNTERNEHMER.map((unternehmer) => (
+              {gefilterteSubunternehmer.length === 0 && (
+                <li className="text-xs text-muted-foreground">Keine Verträge gefunden</li>
+              )}
+              {gefilterteSubunternehmer.map((unternehmer) => (
                 <li key={unternehmer.id}>
                   <SubunternehmerEintrag
                     name={unternehmer.name}
@@ -1037,9 +1091,7 @@ function TabInhalt({
 }) {
   if (tab.typ === "transkript") {
     return (
-      <div className="rounded-md bg-muted p-3 text-xs whitespace-pre-line">
-        {TRANSKRIPT_MOCK}
-      </div>
+      <div className="rounded-md bg-muted p-3 text-xs whitespace-pre-line">{TRANSKRIPT_MOCK}</div>
     );
   }
 
