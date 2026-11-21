@@ -36,6 +36,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -206,6 +214,7 @@ export function CockpitMeldungWorkflow() {
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [aktiverTab, setAktiverTab] = useState("");
   const [betroffeneVertraege, setBetroffeneVertraege] = useState<BetroffenerVertrag[]>([]);
+  const [mailOffen, setMailOffen] = useState(false);
   const [metadaten, setMetadaten] = useState(() => ({
     datum: new Date(),
     deadline: "",
@@ -248,6 +257,9 @@ export function CockpitMeldungWorkflow() {
     setBetroffeneVertraege((current) => current.filter((eintrag) => eintrag.vertrag !== vertrag));
 
   const betroffeneNamen = betroffeneVertraege.map((eintrag) => eintrag.vertrag);
+
+  const aktuellerTab = tabs.find((tab) => tab.id === aktiverTab);
+  const mailText = aktuellerTab?.typ === "dokument" && aktuellerTab.inhalt ? aktuellerTab.inhalt : "";
 
   return (
     <div className="grid h-screen grid-cols-[5fr_5fr_3fr] gap-4 bg-background p-4 text-foreground">
@@ -462,8 +474,9 @@ export function CockpitMeldungWorkflow() {
         <CardFooter className="gap-2">
           <Button variant="outline">PDF</Button>
           <Button variant="outline">Word</Button>
-          <Button variant="outline" size="icon" aria-label="E-Mail">
+          <Button variant="outline" onClick={() => setMailOffen(true)}>
             <MailIcon />
+            Mail
           </Button>
         </CardFooter>
       </Card>
@@ -530,7 +543,243 @@ export function CockpitMeldungWorkflow() {
           </div>
         </CardContent>
       </Card>
+
+      <MailDialog
+        open={mailOffen}
+        onOpenChange={setMailOffen}
+        betroffeneVertraege={betroffeneVertraege}
+        deadline={metadaten.deadline}
+        dokumentTyp={aktuellerTab?.dokumentTyp}
+        dokumentText={mailText}
+        zusammenfassung={zusammenfassung}
+      />
     </div>
+  );
+}
+
+const MAIL_DIENSTE = [
+  { id: "gmail", name: "Gmail" },
+  { id: "outlook", name: "Outlook" },
+  { id: "proton", name: "Proton Mail" },
+] as const;
+
+type MailDienstId = (typeof MAIL_DIENSTE)[number]["id"];
+
+const MAIL_DIENST_KEY = "mail-dienst";
+const BAUVORHABEN = "Wohnanlage Lindenhof, Haus B";
+
+const ladeMailDienst = (): MailDienstId | null => {
+  try {
+    const gespeichert = localStorage.getItem(MAIL_DIENST_KEY);
+    return MAIL_DIENSTE.find((dienst) => dienst.id === gespeichert)?.id ?? null;
+  } catch {
+    return null;
+  }
+};
+
+/** Derives a mock mail address from a company name: "Huber Tiefbau GmbH" -> "huber-tiefbau.bau@yahoo.de". */
+const leiteEmpfaengerAb = (firmenname: string) => {
+  const slug = firmenname
+    .replace(/\(.*?\)/g, "")
+    .replace(/\b(GmbH|KG|& Co\.?|AG|UG)\b/gi, "")
+    .toLowerCase()
+    .replace(/ä/g, "ae")
+    .replace(/ö/g, "oe")
+    .replace(/ü/g, "ue")
+    .replace(/ß/g, "ss")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  return `${slug}.bau@yahoo.de`;
+};
+
+const formatiereDatum = (iso: string) => new Date(iso).toLocaleDateString("de-DE");
+
+function MailDialog({
+  open,
+  onOpenChange,
+  betroffeneVertraege,
+  deadline,
+  dokumentTyp,
+  dokumentText,
+  zusammenfassung,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  betroffeneVertraege: BetroffenerVertrag[];
+  deadline: string;
+  dokumentTyp?: string;
+  dokumentText: string;
+  zusammenfassung: string;
+}) {
+  const [dienst, setDienst] = useState<MailDienstId | null>(ladeMailDienst);
+
+  const waehleDienst = (id: MailDienstId) => {
+    setDienst(id);
+    try {
+      localStorage.setItem(MAIL_DIENST_KEY, id);
+    } catch {
+      // Speicher nicht verfügbar: Auswahl gilt nur für diese Sitzung.
+    }
+  };
+
+  const dienstName = MAIL_DIENSTE.find((eintrag) => eintrag.id === dienst)?.name;
+
+  const empfaenger = [...new Set(betroffeneVertraege.map((eintrag) => eintrag.unternehmer))]
+    .map(leiteEmpfaengerAb)
+    .join(", ");
+  const betreff = [dokumentTyp, betroffeneVertraege[0]?.vertrag.replace(/\.pdf$/, ""), BAUVORHABEN]
+    .filter(Boolean)
+    .join(" – ");
+  const frist = deadline ? `\n\nBitte um Rückmeldung bis ${formatiereDatum(deadline)}.` : "";
+  const nachricht = dokumentText
+    ? `${dokumentText}${frist}`
+    : `Sehr geehrte Damen und Herren,\n\n${zusammenfassung}${frist}\n\nMit freundlichen Grüßen\nBauleitung`;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-xl">
+        {dienst && dienstName ? (
+          <MailEntwurf
+            dienstName={dienstName}
+            initialEmpfaenger={empfaenger}
+            initialBetreff={betreff}
+            initialNachricht={nachricht}
+            onWechsleDienst={() => setDienst(null)}
+            onSchliessen={() => onOpenChange(false)}
+          />
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>Mail-Dienst auswählen</DialogTitle>
+              <DialogDescription>
+                Die Auswahl wird gespeichert und beim nächsten Mal automatisch verwendet.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-2">
+              {MAIL_DIENSTE.map((eintrag) => (
+                <Button
+                  key={eintrag.id}
+                  variant="outline"
+                  className="justify-start"
+                  onClick={() => waehleDienst(eintrag.id)}
+                >
+                  <MailIcon />
+                  {eintrag.name}
+                </Button>
+              ))}
+            </div>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function MailEntwurf({
+  dienstName,
+  initialEmpfaenger,
+  initialBetreff,
+  initialNachricht,
+  onWechsleDienst,
+  onSchliessen,
+}: {
+  dienstName: string;
+  initialEmpfaenger: string;
+  initialBetreff: string;
+  initialNachricht: string;
+  onWechsleDienst: () => void;
+  onSchliessen: () => void;
+}) {
+  const [empfaenger, setEmpfaenger] = useState(initialEmpfaenger);
+  const [betreff, setBetreff] = useState(initialBetreff);
+  const [nachricht, setNachricht] = useState(initialNachricht);
+  const [gesendet, setGesendet] = useState(false);
+
+  const zuruecksetzen = () => {
+    setEmpfaenger(initialEmpfaenger);
+    setBetreff(initialBetreff);
+    setNachricht(initialNachricht);
+  };
+
+  if (gesendet) {
+    return (
+      <>
+        <DialogHeader>
+          <DialogTitle>Mail gesendet</DialogTitle>
+          <DialogDescription>
+            Die Mail an {empfaenger} wurde über {dienstName} gesendet (Mock).
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button onClick={onSchliessen}>Schließen</Button>
+        </DialogFooter>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>Mail über {dienstName}</DialogTitle>
+        <DialogDescription>
+          Entwurf aus den Metadaten und dem Dokument. Alle Felder sind bearbeitbar.
+        </DialogDescription>
+      </DialogHeader>
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="mail-empfaenger" className="text-xs">
+            An
+          </Label>
+          <Input
+            id="mail-empfaenger"
+            value={empfaenger}
+            placeholder="Keinen Vertrag ausgewählt: Empfänger eingeben"
+            onChange={(event) => setEmpfaenger(event.target.value)}
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="mail-betreff" className="text-xs">
+            Betreff
+          </Label>
+          <Input
+            id="mail-betreff"
+            value={betreff}
+            onChange={(event) => setBetreff(event.target.value)}
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="mail-nachricht" className="text-xs">
+            Nachricht
+          </Label>
+          <Textarea
+            id="mail-nachricht"
+            className="h-64 resize-none text-xs field-sizing-fixed"
+            value={nachricht}
+            onChange={(event) => setNachricht(event.target.value)}
+          />
+        </div>
+      </div>
+      <DialogFooter className="sm:justify-between">
+        <div className="flex gap-2">
+          <Button variant="ghost" onClick={onWechsleDienst}>
+            Dienst wechseln
+          </Button>
+          <Button variant="ghost" onClick={zuruecksetzen}>
+            <RotateCcwIcon />
+            Zurücksetzen
+          </Button>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={onSchliessen}>
+            Abbrechen
+          </Button>
+          <Button disabled={!empfaenger.trim()} onClick={() => setGesendet(true)}>
+            <SendIcon />
+            Senden
+          </Button>
+        </div>
+      </DialogFooter>
+    </>
   );
 }
 
