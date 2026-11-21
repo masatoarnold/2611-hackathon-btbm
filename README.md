@@ -16,6 +16,12 @@ Funktionen des Satelliten
 
 - Tagesplan
   - Kalender mit Terminen
+  - Personen vor Ort auflisten und kontaktieren
+- Meldung erstellen
+  - Audioeingabe mit Transkript
+  - Bilder hinzufügen
+  - Text hinzufügen
+  - Vorgangstypen sollen von dem Voice Modell automatisch erkannt werden, aber auch manuell ausgewählt werden können
   -
 
 ---

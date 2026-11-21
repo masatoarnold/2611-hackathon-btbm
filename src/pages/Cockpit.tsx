@@ -1,3 +1,4 @@
+import { Bauzeitenplan } from "@/components/Bauzeitenplan";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const KENNZAHLEN = ["Termine", "Abweichungen", "Meldungen", "Dokumente"];
@@ -31,7 +32,9 @@ export function Cockpit() {
               <CardHeader>
                 <CardTitle>Bauzeitenplan</CardTitle>
               </CardHeader>
-              <CardContent className="h-96" />
+              <CardContent className="h-96">
+                <Bauzeitenplan />
+              </CardContent>
             </Card>
             <Card>
               <CardHeader>

@@ -317,10 +317,10 @@ function Schedule() {
         <CardContent>
           <div className="h-80 overflow-auto">
             <div
-              className="relative flex min-w-[28rem]"
+              className="flex w-max min-w-full"
               style={{ height: HOURS.length * HOUR_HEIGHT_PX }}
             >
-              <div className="w-12 shrink-0">
+              <div className="sticky left-0 z-10 w-12 shrink-0 bg-card">
                 {HOURS.map((hour) => (
                   <div
                     key={hour}
@@ -331,7 +331,7 @@ function Schedule() {
                   </div>
                 ))}
               </div>
-              <div className="relative flex-1">
+              <div className="relative min-w-[24rem] flex-1">
                 {APPOINTMENTS.map((appointment) => (
                   <div
                     key={appointment.title}
