@@ -41,7 +41,10 @@ type Report = {
   attachments: string[];
 };
 
-type View = { name: "list" } | { name: "new"; id?: number } | { name: "detail"; id: number };
+type View =
+  | { name: "list" }
+  | { name: "new"; id?: number }
+  | { name: "detail"; id: number; from: "list" | "new" };
 
 const VORGANGSTYPEN = ["Meldung", "Besprechungsprotokoll"];
 const NO_VORGANGSTYP_VALUE = "keine-auswahl";
@@ -136,7 +139,7 @@ export function Satellite() {
           {view.name === "list" && (
             <ReportList
               reports={reports}
-              onOpen={(id) => setView({ name: "detail", id })}
+              onOpen={(id) => setView({ name: "detail", id, from: "list" })}
               onChangePriority={changePriority}
               onCreate={() => setView({ name: "new" })}
             />
@@ -147,7 +150,7 @@ export function Satellite() {
               onFinish={(report) => {
                 if (view.id === undefined) addReport(report);
                 else updateReport(report.id, report);
-                setView({ name: "detail", id: report.id });
+                setView({ name: "detail", id: report.id, from: "new" });
               }}
               onCancel={() => setView({ name: "list" })}
             />
@@ -155,7 +158,9 @@ export function Satellite() {
           {view.name === "detail" && (
             <ReportDetail
               report={reports.find((report) => report.id === view.id)}
-              onBack={() => setView({ name: "new", id: view.id })}
+              onBack={() =>
+                setView(view.from === "new" ? { name: "new", id: view.id } : { name: "list" })
+              }
               onChange={(content) => updateReport(view.id, { content })}
               onChangeLocation={(location) => updateReport(view.id, { location })}
               onChangeVorgangstyp={(vorgangstyp) => updateReport(view.id, { vorgangstyp })}
@@ -336,9 +341,11 @@ function NewReport({
             {isRecording ? <SquareIcon className="size-6" /> : <MicIcon className="size-6" />}
           </Button>
           <span className="text-xs tabular-nums">
-            {dictation.status === "recording" && `Aufnahme läuft… ${formatDuration(dictation.elapsed)}`}
+            {dictation.status === "recording" &&
+              `Aufnahme läuft… ${formatDuration(dictation.elapsed)}`}
             {dictation.status === "transcribing" && "Wird transkribiert…"}
-            {dictation.status === "idle" && (isSummarizing ? "Wird zusammengefasst…" : "Ton aufzeichnen")}
+            {dictation.status === "idle" &&
+              (isSummarizing ? "Wird zusammengefasst…" : "Ton aufzeichnen")}
           </span>
           {(dictation.error ?? summaryError) && (
             <span className="text-xs text-destructive">{dictation.error ?? summaryError}</span>
