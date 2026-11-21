@@ -781,7 +781,7 @@ const leiteEmpfaengerAb = (firmenname: string) => {
 
 const formatiereDatum = (iso: string) => new Date(iso).toLocaleDateString("de-DE");
 
-function MailDialog({
+export function MailDialog({
   open,
   onOpenChange,
   betroffeneVertraege,
