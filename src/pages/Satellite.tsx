@@ -147,7 +147,7 @@ export function Satellite() {
 
   return (
     <div
-      className={`${TOUCH_FRIENDLY_CLASSES} mx-auto flex min-h-dvh w-full max-w-md flex-col bg-background text-foreground [&_[data-slot=card]]:bg-white [&_[data-slot=input]]:bg-white [&_[data-slot=item]]:bg-white [&_[data-slot=select-trigger]]:bg-white [&_[data-slot=tabs-list]]:bg-white [&_[data-slot=textarea]]:bg-white`}
+      className={`${TOUCH_FRIENDLY_CLASSES} mx-auto flex min-h-dvh w-full max-w-md flex-col bg-seite text-foreground [&_[data-slot=card]]:bg-white [&_[data-slot=input]]:bg-white [&_[data-slot=item]]:bg-white [&_[data-slot=select-trigger]]:bg-white [&_[data-slot=tabs-list]]:bg-white [&_[data-slot=textarea]]:bg-white`}
     >
       <Tabs defaultValue="reports" className="flex-1 gap-6 p-4">
         <TabsList>
@@ -277,7 +277,7 @@ function StickyActionBar({
 }) {
   return (
     <div
-      className={`sticky bottom-0 mt-auto -mx-4 -mb-4 flex items-center justify-between gap-2 border-t bg-background p-4 ${className}`}
+      className={`sticky bottom-0 mt-auto -mx-4 -mb-4 flex items-center justify-between gap-2 border-t bg-seite p-4 ${className}`}
     >
       {children}
     </div>

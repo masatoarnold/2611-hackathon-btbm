@@ -205,10 +205,6 @@ const formatUhrzeit = (stunde: number) => {
   return `${String(Math.floor(gesamtMinuten / 60)).padStart(2, "0")}:${String(gesamtMinuten % 60).padStart(2, "0")}`;
 };
 
-/** Round, tinted icon buttons: green confirms, red removes. */
-const ICON_GRUEN = "bg-green-100 text-green-700 hover:bg-green-200 hover:text-green-800";
-const ICON_ROT = "bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700";
-
 function ListenEintrag({ titel, status }: { titel: string; status: string }) {
   return (
     <div className="flex items-center justify-between gap-2 rounded-xl bg-background p-3 text-sm">
@@ -412,19 +408,15 @@ function MeldungsListe({
                   {mitAktionen && (
                     <>
                       <Button
-                        variant="ghost"
                         size="icon"
                         aria-label="Erledigt"
-                        className={ICON_GRUEN}
                         onClick={() => onErledigt?.(meldung)}
                       >
                         <CheckIcon />
                       </Button>
                       <Button
-                        variant="ghost"
                         size="icon"
                         aria-label="Ablehnen"
-                        className={ICON_ROT}
                         onClick={() => onAblehnen?.(meldung)}
                       >
                         <XIcon />
@@ -486,7 +478,7 @@ export function Cockpit() {
   const offenerVertrag = lieferanten.find(({ id }) => id === offenerVertragId);
 
   return (
-    <div className="flex h-screen min-w-5xl flex-col overflow-hidden bg-background text-foreground">
+    <div className="flex h-screen min-w-5xl flex-col overflow-hidden bg-seite text-foreground">
       <CockpitHeader projekt={TAGESBERICHT.projekt} datum={MELDUNGSDATUM} />
 
       <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,4fr)_minmax(0,6fr)_minmax(0,3fr)] gap-4 p-6">

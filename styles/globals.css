@@ -7,6 +7,7 @@
 
 @theme inline {
   --color-background: var(--background);
+  --color-seite: var(--seite);
   --color-foreground: var(--foreground);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -59,19 +60,20 @@
 :root {
   --radius: 1.25rem;
   --background: #eef0f4;
-  --foreground: #20345b;
+  --seite: color-mix(in srgb, #003891 35%, white);
+  --foreground: #003891;
   --card: #ffffff;
-  --card-foreground: #20345b;
+  --card-foreground: #003891;
   --popover: #ffffff;
-  --popover-foreground: #20345b;
-  --primary: #281ea9;
+  --popover-foreground: #003891;
+  --primary: #003891;
   --primary-foreground: #ffffff;
   --secondary: #d3e6f6;
-  --secondary-foreground: #281ea9;
+  --secondary-foreground: #003891;
   --muted: #e3e6ec;
-  --muted-foreground: #4a5b7a;
+  --muted-foreground: color-mix(in srgb, #003891 70%, white);
   --accent: #d3e6f6;
-  --accent-foreground: #281ea9;
+  --accent-foreground: #003891;
   --destructive: oklch(0.577 0.245 27.325);
   --border: #e4e7ec;
   --input: #e4e7ec;
@@ -93,6 +95,7 @@
 
 .dark {
   --background: #050f2b;
+  --seite: #050f2b;
   --foreground: #eaf2fa;
   --card: #0b1a3f;
   --card-foreground: #eaf2fa;

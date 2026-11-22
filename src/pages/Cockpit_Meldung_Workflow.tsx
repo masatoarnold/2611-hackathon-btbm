@@ -434,7 +434,7 @@ export function CockpitMeldungWorkflow() {
   };
 
   return (
-    <div className="flex h-screen flex-col bg-background text-foreground">
+    <div className="flex h-screen flex-col bg-seite text-foreground">
       <CockpitHeader projekt="Wohnanlage Lindenhof – Haus B" datum="21.11.26" />
       <div className="grid min-h-0 flex-1 grid-cols-[5fr_5fr_3fr] gap-4 p-4">
         {/* Linke Spalte: Incident und Subunternehmer */}
