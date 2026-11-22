@@ -17,7 +17,10 @@ export function PriorityFlag({ priority }: { priority: number }) {
     <span
       role="img"
       aria-label={`Priorität ${priority}`}
-      className="inline-flex shrink-0 items-center gap-1 rounded-full border border-input bg-background px-2 py-0.5 text-xs font-medium"
+      className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+      style={{
+        backgroundColor: `color-mix(in oklab, ${color} 14%, transparent)`,
+      }}
     >
       <FlagIcon
         className="size-3.5"

@@ -6,9 +6,19 @@ import {
   MailIcon,
   PlusIcon,
   Trash2Icon,
-  XIcon,
 } from "lucide-react";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { CockpitHeader } from "@/components/CockpitHeader";
 import {
   PUMPEN_VERTRAG,
@@ -320,7 +330,7 @@ function AufgabenListe() {
               >
                 <Checkbox
                   id={`aufgabe-${id}`}
-                  className="mt-0.5"
+                  className="mt-0.5 border-2 border-primary"
                   checked={erledigt}
                   onCheckedChange={() => aufgabeUmschalten(id)}
                 />
@@ -363,6 +373,7 @@ function AufgabenListe() {
           <Button
             type="submit"
             size="icon"
+            className="disabled:opacity-100"
             aria-label="Aufgabe hinzufügen"
             disabled={!neueAufgabe.trim()}
           >
@@ -445,20 +456,20 @@ function MeldungsListe({
   aufgeklappteId,
   onToggle,
   onErledigt,
-  onAblehnen,
+  onLoeschen,
   onPrioritaet,
 }: {
   ueberschrift: string;
   meldungen: Meldung[];
   aufgeklappteId: string | null;
   onToggle: (id: string) => void;
-  /** Without these handlers the list is read-only (no Erledigt/Ablehnen buttons). */
+  /** Without these handlers the list is read-only (no Erledigt/Löschen buttons). */
   onErledigt?: (meldung: Meldung) => void;
-  onAblehnen?: (meldung: Meldung) => void;
-  /** Without this handler the priority is shown as a static flag. */
+  onLoeschen?: (meldung: Meldung) => void;
+  /** Without this handler the priority is shown as a plain flag. */
   onPrioritaet?: (meldung: Meldung, priority: number) => void;
 }) {
-  const mitAktionen = Boolean(onErledigt && onAblehnen);
+  const mitAktionen = Boolean(onErledigt && onLoeschen);
   return (
     <section className="flex flex-col gap-2">
       <h2 className="text-sm font-semibold text-primary">{ueberschrift}</h2>
@@ -532,19 +543,43 @@ function MeldungsListe({
                   {mitAktionen && (
                     <>
                       <Button
+                        variant="ghost"
                         size="icon"
                         aria-label="Erledigt"
                         onClick={() => onErledigt?.(meldung)}
                       >
                         <CheckIcon />
                       </Button>
-                      <Button
-                        size="icon"
-                        aria-label="Ablehnen"
-                        onClick={() => onAblehnen?.(meldung)}
-                      >
-                        <XIcon />
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Meldung löschen"
+                          >
+                            <Trash2Icon />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Meldung löschen?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Möchtest du diese Meldung wirklich löschen? Diese
+                              Aktion kann nicht rückgängig gemacht werden.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => onLoeschen?.(meldung)}
+                            >
+                              Löschen
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </>
                   )}
                   <Button variant="outline" asChild>
@@ -576,6 +611,7 @@ export function Cockpit() {
     meldungen,
     fehler: meldungenFehler,
     aendere: aendereMeldung,
+    loesche: loescheMeldung,
   } = useMeldungen();
   const anstehend = meldungen
     .filter(({ status }) => status === "anstehend")
@@ -600,8 +636,7 @@ export function Cockpit() {
   const meldungErledigen = (meldung: Meldung) =>
     aendereMeldung(meldung.id, { status: "abgeschlossen" }, { sofort: true });
 
-  const meldungAblehnen = (meldung: Meldung) =>
-    aendereMeldung(meldung.id, { status: "abgelehnt" }, { sofort: true });
+  const meldungLoeschen = (meldung: Meldung) => loescheMeldung(meldung.id);
 
   const meldungPrioritaetAendern = (meldung: Meldung, priority: number) =>
     aendereMeldung(meldung.id, { priority }, { sofort: true });
@@ -620,7 +655,7 @@ export function Cockpit() {
   const offenerVertrag = lieferanten.find(({ id }) => id === offenerVertragId);
 
   return (
-    <div className="flex h-screen min-w-5xl flex-col overflow-hidden bg-background text-foreground">
+    <div className="flex h-screen min-w-5xl flex-col overflow-hidden bg-seite text-foreground">
       <CockpitHeader datum={MELDUNGSDATUM} />
 
       <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,4fr)_minmax(0,6fr)_minmax(0,3fr)] gap-4 p-6">
@@ -643,7 +678,7 @@ export function Cockpit() {
                 aufgeklappteId={aufgeklappteMeldungId}
                 onToggle={toggleMeldung}
                 onErledigt={meldungErledigen}
-                onAblehnen={meldungAblehnen}
+                onLoeschen={meldungLoeschen}
                 onPrioritaet={meldungPrioritaetAendern}
               />
               <MeldungsListe

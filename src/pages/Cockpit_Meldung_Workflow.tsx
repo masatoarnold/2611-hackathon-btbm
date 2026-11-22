@@ -434,7 +434,7 @@ export function CockpitMeldungWorkflow() {
   };
 
   return (
-    <div className="flex h-screen flex-col bg-background text-foreground">
+    <div className="flex h-screen flex-col bg-seite text-foreground">
       <CockpitHeader
         datum={new Date().toLocaleDateString("de-DE", {
           day: "2-digit",
@@ -557,9 +557,13 @@ export function CockpitMeldungWorkflow() {
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="rounded-full"
+                    aria-label="Vorfall löschen"
+                  >
                     <Trash2Icon />
-                    Löschen
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
@@ -573,7 +577,6 @@ export function CockpitMeldungWorkflow() {
                   <AlertDialogFooter>
                     <AlertDialogCancel>Abbrechen</AlertDialogCancel>
                     <AlertDialogAction
-                      variant="destructive"
                       onClick={async () => {
                         await loesche(meldungsId);
                         window.location.assign("/cockpit");
