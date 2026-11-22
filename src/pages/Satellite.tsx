@@ -63,7 +63,7 @@ const NO_VORGANGSTYP_VALUE = "keine-auswahl";
 const PRIORITIES = [1, 2, 3, 4, 5];
 const DEFAULT_PRIORITY = 1;
 const PRIORITY_COLORS: Record<number, string> = {
-  1: "var(--foreground)",
+  1: "#000000",
   2: "#3b82f6",
   3: "#eab308",
   4: "#ef4444",
