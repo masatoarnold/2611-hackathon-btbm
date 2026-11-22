@@ -15,6 +15,7 @@ import {
 import { CockpitHeader } from "@/components/CockpitHeader";
 import { TagesberichtEditor } from "@/components/TagesberichtEditor";
 import {
+  FENSTER_VERTRAG,
   PUMPEN_VERTRAG,
   ROHBAU_VERTRAG,
   STAHL_VERTRAG,
@@ -97,6 +98,12 @@ const LIEFERANTEN_MOCK: Lieferant[] = [
     titel: "Huber Tiefbau GmbH",
     beschreibung: "Baugrube und Verbau · Rahmenvertrag",
     vertrag: TIEFBAU_VERTRAG,
+  },
+  {
+    id: "l-7",
+    titel: "Fensterbau Hartmann GmbH",
+    beschreibung: "Holz-Alu-Fenster Haus B · Liefervertrag",
+    vertrag: FENSTER_VERTRAG,
   },
 ];
 

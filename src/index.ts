@@ -10,6 +10,7 @@ import {
   handleLoescheMeldung,
   LIVE_TOPIC,
 } from "./server/meldungen";
+import { handleKeywords } from "./server/keywords";
 import { handleSummarize } from "./server/summarize";
 import { handleTranscribe } from "./server/transcribe";
 
@@ -20,6 +21,7 @@ const server = serve({
 
     "/api/transcribe": { POST: handleTranscribe },
     "/api/summarize": { POST: handleSummarize },
+    "/api/keywords": { POST: handleKeywords },
 
     "/api/meldungen": {
       GET: handleListeMeldungen,

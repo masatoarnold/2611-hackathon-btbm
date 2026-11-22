@@ -254,3 +254,63 @@ export const TIEFBAU_VERTRAG: Vertrag = {
   ],
   unterschrift: "München, 24.06.2026 · Musterbau GmbH · Huber Tiefbau GmbH",
 };
+
+export const FENSTER_VERTRAG: Vertrag = {
+  kopf: [
+    "Liefervertrag Nr. LV-2026-0388",
+    "vom 02.10.2026",
+    "Auftraggeber: Musterbau GmbH, Leopoldstraße 112, 80802 München",
+    "Lieferant: Fensterbau Hartmann GmbH, Industriestraße 14, 84030 Landshut",
+    "Bauvorhaben: Wohnanlage Lindenhof, Haus B",
+  ],
+  paragraphen: [
+    {
+      titel: "Vertragsgegenstand",
+      text: "Der Lieferant fertigt und liefert für das Bauvorhaben 64 Holz-Alu-Fensterelemente und 12 Fenstertüren nach Fensterliste Index C, frei Baustelle, einschließlich Beschlägen, Dichtungen und Verglasung. Der Einbau ist nicht Gegenstand dieses Vertrags.",
+    },
+    {
+      titel: "Ausführung und Qualität",
+      text: "Dreifach-Isolierverglasung mit Ug ≤ 0,6 W/(m²K), Gesamt-U-Wert Uw ≤ 0,95 W/(m²K), Schallschutzklasse 3 an den Fassaden zur Straße. Die CE-Kennzeichnung nach DIN EN 14351-1 ist je Lieferung nachzuweisen.",
+    },
+    {
+      titel: "Aufmaß und Freigabe",
+      text: "Das Naturaufmaß erfolgt durch den Lieferanten nach Fertigstellung der Rohbauöffnungen. Werkstattpläne und Farbmuster (RAL 7016 außen, Eiche natur innen) sind vom Auftraggeber vor Produktionsbeginn schriftlich freizugeben. Die Produktion beginnt frühestens vier Wochen vor dem Liefertermin.",
+    },
+    {
+      titel: "Liefertermine",
+      text: "Abruf 1 (Erdgeschoss und 1. Obergeschoss, 38 Elemente): Kalenderwoche 46/2026, bereits geliefert. Abruf 2 (2. Obergeschoss und Dachgeschoss, 38 Elemente): Kalenderwoche 4/2027. Der Lieferant bestätigt jeden Termin spätestens vier Wochen vorher schriftlich. Die Anlieferung erfolgt Montag bis Freitag zwischen 07:00 und 15:00 Uhr nach Anmeldung bei der Bauleitung.",
+    },
+    {
+      titel: "Lieferverzug und Vertragsstrafe",
+      text: "Gerät der Lieferant mit einem Liefertermin in Verzug, zeigt er dies der Bauleitung unverzüglich schriftlich an und nennt den neuen Termin. Für jeden Werktag Verzug wird eine Vertragsstrafe von 0,3 % der Nettosumme des betroffenen Abrufs fällig, höchstens jedoch 5 %. Weitergehende Schadensersatzansprüche, insbesondere für Stillstandskosten nachfolgender Gewerke, bleiben vorbehalten.",
+    },
+    {
+      titel: "Preise",
+      text: "Pauschalpreis Abruf 1: 142.600,00 € netto. Pauschalpreis Abruf 2: 138.900,00 € netto. Die Preise sind bis zur Lieferung fest und schließen Verpackung, Transport und Abladen mit Kran des Auftraggebers ein.",
+    },
+    {
+      titel: "Abnahme der Lieferung und Mängel",
+      text: "Die Lieferung ist bei Anlieferung auf Transportschäden und Vollständigkeit zu prüfen. Sichtbare Mängel sind auf dem Lieferschein zu vermerken. Verdeckte Mängel sind unverzüglich nach Entdeckung schriftlich anzuzeigen. Die Verjährungsfrist für Mängelansprüche beträgt fünf Jahre ab Abnahme des Bauwerks.",
+    },
+    {
+      titel: "Beschädigte Elemente und Ersatzlieferung",
+      text: "Ist ein Element beschädigt, etwa durch Glasbruch oder einen Rahmenschaden, zeigt der Auftraggeber dies unter Angabe von Position, Geschoss und Foto an. Beruht der Schaden auf Herstellung oder Transport, liefert der Lieferant innerhalb von zehn Werktagen kostenfrei Ersatz. Beruht der Schaden auf Einwirkung nach Gefahrübergang, wird der Ersatz zum Listenpreis berechnet; die Bauleitung prüft dann einen Anspruch gegen den Verursacher oder die Bauleistungsversicherung.",
+    },
+    {
+      titel: "Lagerung und Gefahrübergang",
+      text: "Die Gefahr geht mit Übergabe auf der Baustelle über. Der Auftraggeber lagert die Elemente trocken, aufrecht und gegen Verschmutzung geschützt. Eine Zwischenlagerung beim Lieferanten ist bis zu zwei Wochen kostenfrei möglich.",
+    },
+    {
+      titel: "Zahlung",
+      text: "Zahlung zu 30 % bei Auftragsbestätigung, zu 60 % nach Lieferung und zu 10 % nach Abnahme, jeweils innerhalb von 30 Tagen ohne Abzug. Bei Zahlung innerhalb von 14 Tagen gewährt der Lieferant 2 % Skonto.",
+    },
+    {
+      titel: "Haftung und Versicherung",
+      text: "Der Lieferant unterhält eine Betriebshaftpflichtversicherung mit einer Deckungssumme von mindestens 5.000.000 € für Personen- und Sachschäden und weist sie auf Verlangen nach.",
+    },
+    { titel: "Anwendbare Regelwerke", text: VOB },
+    { titel: "Schlussbestimmungen", text: `${SCHRIFTFORM} ${GERICHTSSTAND}` },
+  ],
+  unterschrift:
+    "München, 02.10.2026 · Musterbau GmbH (Bauleitung) · Fensterbau Hartmann GmbH (Geschäftsführung)",
+};

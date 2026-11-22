@@ -74,8 +74,17 @@ import { Message, MessageContent } from "@/components/ui/message";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
+import { schlageKeywordsVor } from "@/lib/keywords";
 import { alsPdfHerunterladen, alsWordHerunterladen } from "@/lib/export";
 import { useMeldungen, type Anhang } from "@/lib/meldungen";
+import {
+  FENSTER_VERTRAG,
+  PUMPEN_VERTRAG,
+  ROHBAU_VERTRAG,
+  TIEFBAU_VERTRAG,
+  TRANSPORTBETON_VERTRAG,
+  type Vertrag,
+} from "@/lib/vertraege";
 
 // Mock-Daten (fiktives Projekt Wohnanlage Lindenhof, Haus B), bis die Anbindung steht
 const SUBUNTERNEHMER = [
@@ -127,6 +136,15 @@ const SUBUNTERNEHMER = [
       "§ 6 Termine: Beginn Rohinstallation nach Fertigstellung Decke über EG.",
   },
   {
+    id: "fenster",
+    name: "Fensterbau Hartmann GmbH (Lieferant Fenster)",
+    vertraege: ["Liefervertrag Fenster Haus B.pdf", "Fensterliste Index C.pdf"],
+    leistung:
+      "Lieferung von 64 Holz-Alu-Fenstern und 12 Fenstertüren, frei Baustelle, in zwei Abrufen (KW 46/2026 und KW 4/2027)",
+    klausel:
+      "§ 8 Beschädigte Elemente: Bei Herstellungs- oder Transportschäden liefert der Lieferant binnen 10 Werktagen kostenfrei Ersatz. Schäden nach Gefahrübergang werden zum Listenpreis berechnet.",
+  },
+  {
     id: "haustechnik",
     name: "Wagner Haustechnik GmbH",
     vertraege: ["Werkvertrag Heizung Sanitär Lüftung.pdf"],
@@ -136,12 +154,31 @@ const SUBUNTERNEHMER = [
   },
 ];
 
-/** Builds a mock preview for each contract file of a subcontractor. */
+/** Contract files that exist as full numbered contracts in vertraege.ts. */
+const VOLLE_VERTRAEGE: Record<string, Vertrag> = {
+  "Liefervertrag Transportbeton 2026.pdf": TRANSPORTBETON_VERTRAG,
+  "Mietvertrag Autobetonpumpe 36 m.pdf": PUMPEN_VERTRAG,
+  "Werkvertrag Rohbau Haus B.pdf": ROHBAU_VERTRAG,
+  "Rahmenvertrag Tiefbau 2026.pdf": TIEFBAU_VERTRAG,
+  "Liefervertrag Fenster Haus B.pdf": FENSTER_VERTRAG,
+};
+
+/** A full contract as plain text: header, numbered paragraphs and signature line. */
+function vertragAlsText(vertrag: Vertrag) {
+  const paragraphen = vertrag.paragraphen.map(
+    ({ titel, text }, index) => `§ ${index + 1} ${titel}\n${text}`,
+  );
+  return [vertrag.kopf.join("\n"), ...paragraphen, vertrag.unterschrift].join("\n\n");
+}
+
+/** Preview and search text per contract file: the full contract if there is one, else a short stub. */
 const VERTRAGS_VORSCHAU: Record<string, string> = Object.fromEntries(
   SUBUNTERNEHMER.flatMap(({ name, vertraege, leistung, klausel }) =>
     vertraege.map((vertrag) => [
       vertrag,
-      `${vertrag.replace(/\.pdf$/, "")}\n\nAuftraggeber: Musterbau GmbH\nAuftragnehmer: ${name}\nBauvorhaben: Wohnanlage Lindenhof, Haus B\n\nVertragsgrundlagen: VOB/B in der aktuellen Fassung, Leistungsverzeichnis, Terminplan Rev. 3\n\nLeistung: ${leistung}\n\n${klausel}\n\nGerichtsstand: München`,
+      VOLLE_VERTRAEGE[vertrag]
+        ? vertragAlsText(VOLLE_VERTRAEGE[vertrag])
+        : `${vertrag.replace(/\.pdf$/, "")}\n\nAuftraggeber: Musterbau GmbH\nAuftragnehmer: ${name}\nBauvorhaben: Wohnanlage Lindenhof, Haus B\n\nVertragsgrundlagen: VOB/B in der aktuellen Fassung, Leistungsverzeichnis, Terminplan Rev. 3\n\nLeistung: ${leistung}\n\n${klausel}\n\nGerichtsstand: München`,
     ]),
   ),
 );
@@ -165,28 +202,6 @@ vertragsIndex.addAll(
   ),
 );
 
-const MAX_KEYWORDS = 5;
-
-/** Simulierte Laufzeit des Modells in Millisekunden. */
-const KEYWORDS_MOCK_LAUFZEIT_MS = 1500;
-
-/** Mock-Keywords für die Vertragssuche. Hier eintragen (maximal MAX_KEYWORDS). */
-const KEYWORDS_MOCK = [
-  "Lieferzeit",
-  "Verspätung",
-  "Beton",
-  "Lieferant",
-  "Wartezeiten",
-];
-
-/** Simuliert die Keyword-Erzeugung durch ein Modell, bis die Anbindung steht. */
-async function schlageKeywordsVor(_zusammenfassung: string): Promise<string[]> {
-  await new Promise((resolve) =>
-    setTimeout(resolve, KEYWORDS_MOCK_LAUFZEIT_MS),
-  );
-  return KEYWORDS_MOCK.slice(0, MAX_KEYWORDS);
-}
-
 /** Opened when the page is called without ?id= (seed entry "Lieferung verspätet"). */
 const STANDARD_MELDUNG_ID = "m-2";
 
@@ -199,6 +214,8 @@ const DOKUMENTTYPEN = [
 
 /** Previews for contract files; previews of a Meldung's own files come with its attachments. */
 const DATEI_VORSCHAU: Record<string, string> = {
+  "Fensterliste Index C.pdf":
+    "Fensterliste Index C · Fensterbau Hartmann GmbH\n\nWohnanlage Lindenhof, Haus B\n\nAbruf 1 (KW 46/2026, geliefert): EG und 1. OG, 38 Elemente\nAbruf 2 (KW 4/2027): 2. OG und DG, 38 Elemente\n\nTypen: F1 Festverglasung, F2 Dreh-Kipp 1-flügelig, F3 Dreh-Kipp 2-flügelig, FT1 Fenstertür\nFarbe: RAL 7016 außen, Eiche natur innen\nVerglasung: 3-fach, Ug 0,6 W/(m²K)",
   "Preisliste Beton C25-30.pdf":
     "Preisliste 2026 · Isar Transportbeton GmbH\n\nC25/30 XC2 F3 16 mm: 128,00 €/m³\nC30/37 XC4 F3 16 mm: 139,50 €/m³\nZuschlag Winterbeton (< 5 °C): 6,50 €/m³\nWartezeit Fahrmischer ab 30 min: 1,80 €/min\n\nAlle Preise netto, frei Baustelle München.",
   "Versicherungsnachweis 2026.pdf":
@@ -381,10 +398,17 @@ export function CockpitMeldungWorkflow() {
 
   const [keywordsLaden, setKeywordsLaden] = useState(false);
 
+  const [keywordsFehler, setKeywordsFehler] = useState<string | null>(null);
+
   const keywordsVorschlagen = async () => {
     setKeywordsLaden(true);
+    setKeywordsFehler(null);
     try {
       setVertragsSuche((await schlageKeywordsVor(zusammenfassung)).join(" "));
+    } catch (error) {
+      setKeywordsFehler(
+        error instanceof Error ? error.message : "Keine Vorschläge erhalten.",
+      );
     } finally {
       setKeywordsLaden(false);
     }
@@ -393,15 +417,21 @@ export function CockpitMeldungWorkflow() {
   const gefilterteSubunternehmer = useMemo(() => {
     const suchbegriff = vertragsSuche.trim();
     if (!suchbegriff) return SUBUNTERNEHMER;
-    const treffer = new Set(
-      vertragsIndex.search(suchbegriff).map((ergebnis) => ergebnis.id),
+    const treffer = new Map(
+      vertragsIndex.search(suchbegriff).map((ergebnis) => [ergebnis.id, ergebnis.score]),
     );
+    const besterTreffer = (vertraege: string[]) =>
+      Math.max(...vertraege.map((vertrag) => treffer.get(vertrag) ?? 0));
+
+    // Only matching contracts, best match first
     return SUBUNTERNEHMER.map((unternehmer) => ({
       ...unternehmer,
-      vertraege: unternehmer.vertraege.filter((vertrag) =>
-        treffer.has(vertrag),
-      ),
-    })).filter((unternehmer) => unternehmer.vertraege.length > 0);
+      vertraege: unternehmer.vertraege
+        .filter((vertrag) => treffer.has(vertrag))
+        .sort((a, b) => (treffer.get(b) ?? 0) - (treffer.get(a) ?? 0)),
+    }))
+      .filter((unternehmer) => unternehmer.vertraege.length > 0)
+      .sort((a, b) => besterTreffer(b.vertraege) - besterTreffer(a.vertraege));
   }, [vertragsSuche]);
 
   const aktuellerTab = tabs.find((tab) => tab.id === aktiverTab);
@@ -621,6 +651,11 @@ export function CockpitMeldungWorkflow() {
                   Vorschlag
                 </Button>
               </div>
+              {keywordsFehler && (
+                <p role="alert" className="text-xs text-destructive">
+                  {keywordsFehler}
+                </p>
+              )}
             </CardHeader>
             <ScrollArea className="min-h-0 flex-1">
               <CardContent>
