@@ -28,7 +28,7 @@ import {
   TRANSPORTBETON_VERTRAG,
   type Vertrag,
 } from "@/lib/vertraege";
-import { PRIORITY_COLORS, PriorityFlag } from "@/components/PriorityFlag";
+import { PRIORITY_COLORS } from "@/components/PriorityFlag";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -508,7 +508,21 @@ function MeldungsListe({
                   }
                 />
               ) : (
-                <PriorityFlag priority={priority} />
+                <span
+                  role="img"
+                  aria-label={`Priorität ${priority}`}
+                  className="flex h-5 w-14 shrink-0 items-center justify-center gap-1 px-2 text-xs tabular-nums"
+                >
+                  <FlagIcon
+                    className="size-3.5"
+                    style={{
+                      color: PRIORITY_COLORS[priority],
+                      fill: PRIORITY_COLORS[priority],
+                      stroke: PRIORITY_COLORS[priority],
+                    }}
+                  />
+                  {priority}
+                </span>
               )}
               <Button
                 variant="ghost"
@@ -582,13 +596,15 @@ function MeldungsListe({
                       </AlertDialog>
                     </>
                   )}
-                  <Button variant="outline" asChild>
-                    <a
-                      href={`${MELDUNG_WORKFLOW_PFAD}?id=${encodeURIComponent(id)}`}
-                    >
-                      Bearbeiten
-                    </a>
-                  </Button>
+                  {mitAktionen && (
+                    <Button variant="outline" asChild>
+                      <a
+                        href={`${MELDUNG_WORKFLOW_PFAD}?id=${encodeURIComponent(id)}`}
+                      >
+                        Bearbeiten
+                      </a>
+                    </Button>
+                  )}
                 </div>
               </>
             )}
