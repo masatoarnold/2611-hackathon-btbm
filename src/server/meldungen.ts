@@ -34,6 +34,7 @@ const MeldungSchema = z.object({
   location: z.string(),
   vorgangstyp: z.string().nullable(),
   status: z.enum(["anstehend", "abgeschlossen", "abgelehnt"]),
+
   attachments: z.array(AnhangSchema),
 });
 

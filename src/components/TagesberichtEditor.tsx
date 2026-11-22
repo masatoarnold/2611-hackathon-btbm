@@ -1,4 +1,11 @@
-import { BoldIcon, ListIcon, SparklesIcon } from "lucide-react";
+import { useState } from "react";
+import {
+  BoldIcon,
+  CircleCheckIcon,
+  ListIcon,
+  RefreshCwIcon,
+  SparklesIcon,
+} from "lucide-react";
 import {
   EditorContent,
   useEditor,
@@ -10,7 +17,10 @@ import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import StarterKit from "@tiptap/starter-kit";
 import { Markdown } from "@tiptap/markdown";
 
-import { AbschnittsUeberschrift, QuellenKontext } from "@/components/TagesberichtErweiterungen";
+import {
+  AbschnittsUeberschrift,
+  QuellenKontext,
+} from "@/components/TagesberichtErweiterungen";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +43,7 @@ import {
 import type { Meldung } from "@/lib/meldungen";
 
 const ENTWURF_SCHLUESSEL = "tagesbericht-entwurf";
+const BEKANNTE_MELDUNGEN_SCHLUESSEL = "tagesbericht-bekannte-meldungen";
 
 const ABSATZ = "text";
 const BLOCK_AUSWAHL = [
@@ -53,6 +64,22 @@ function ladeEntwurf(): JSONContent | undefined {
 
 const speichereEntwurf = (dokument: JSONContent) =>
   localStorage.setItem(ENTWURF_SCHLUESSEL, JSON.stringify(dokument));
+
+/**
+ * IDs of all Meldungen that existed when the report was last created or updated.
+ * Sections the user deleted on purpose are not suggested again. `null` = unknown (old draft).
+ */
+function ladeBekannteMeldungen(): string[] | null {
+  try {
+    const roh = localStorage.getItem(BEKANNTE_MELDUNGEN_SCHLUESSEL);
+    return roh ? JSON.parse(roh) : null;
+  } catch {
+    return null;
+  }
+}
+
+const speichereBekannteMeldungen = (ids: string[]) =>
+  localStorage.setItem(BEKANNTE_MELDUNGEN_SCHLUESSEL, JSON.stringify(ids));
 
 /** IDs of all Meldungen that flowed into the report. */
 function sammleQuellen(dokument: ProseMirrorNode) {
@@ -80,7 +107,10 @@ function abschnittsKnoten(meldungen: Meldung[]): JSONContent[] {
       ...content
         .split("\n")
         .filter((zeile) => zeile.trim())
-        .map((zeile) => ({ type: "paragraph", content: textKnoten(zeile.trim()) })),
+        .map((zeile) => ({
+          type: "paragraph",
+          content: textKnoten(zeile.trim()),
+        })),
     ]);
 }
 
@@ -90,6 +120,8 @@ function Werkzeugleiste({
   fett,
   liste,
   leer,
+  neueMeldungen,
+  onAktualisieren,
   onNeuErstellen,
 }: {
   editor: Editor;
@@ -97,6 +129,8 @@ function Werkzeugleiste({
   fett: boolean;
   liste: boolean;
   leer: boolean;
+  neueMeldungen: number;
+  onAktualisieren: () => void;
   onNeuErstellen: () => void;
 }) {
   const blockWechseln = (wert: string) => {
@@ -143,7 +177,31 @@ function Werkzeugleiste({
       >
         <ListIcon />
       </Button>
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-1">
+        {!leer &&
+          (neueMeldungen > 0 ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-primary"
+              title="Neue Meldungen in den Tagesbericht übernehmen"
+              onClick={onAktualisieren}
+            >
+              <RefreshCwIcon />
+              {neueMeldungen === 1
+                ? "1 neue Meldung"
+                : `${neueMeldungen} neue Meldungen`}
+              {" · Aktualisieren"}
+            </Button>
+          ) : (
+            <span
+              className="flex items-center gap-1 px-2 text-xs text-muted-foreground"
+              title="Alle Meldungen sind im Tagesbericht enthalten"
+            >
+              <CircleCheckIcon className="size-4" />
+              Aktuell
+            </span>
+          ))}
         {!leer && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -156,12 +214,15 @@ function Werkzeugleiste({
               <AlertDialogHeader>
                 <AlertDialogTitle>Tagesbericht neu erstellen?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Der aktuelle Bericht wird ersetzt, auch deine Änderungen gehen verloren.
+                  Der aktuelle Bericht wird ersetzt, auch deine Änderungen gehen
+                  verloren.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                <AlertDialogAction onClick={onNeuErstellen}>Neu erstellen</AlertDialogAction>
+                <AlertDialogAction onClick={onNeuErstellen}>
+                  Neu erstellen
+                </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -191,6 +252,10 @@ export function TagesberichtEditor({
   onMeldungOeffnen: (id: string) => void;
   onMarkdownChange: (markdown: string) => void;
 }) {
+  const [bekannteMeldungen, setBekannteMeldungen] = useState(
+    ladeBekannteMeldungen,
+  );
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -226,14 +291,19 @@ export function TagesberichtEditor({
       leer: editor?.isEmpty ?? true,
       fett: editor?.isActive("bold") ?? false,
       liste: editor?.isActive("bulletList") ?? false,
-      block: editor?.isActive("heading") ? String(editor.getAttributes("heading").level) : ABSATZ,
+      block: editor?.isActive("heading")
+        ? String(editor.getAttributes("heading").level)
+        : ABSATZ,
       quellen: editor ? sammleQuellen(editor.state.doc) : [],
     }),
   });
 
   if (!editor) return null;
 
-  const fehlendeMeldungen = meldungen.filter(({ id }) => !zustand.quellen.includes(id));
+  const neueMeldungen = meldungen.filter(
+    ({ id }) =>
+      !zustand.quellen.includes(id) && !bekannteMeldungen?.includes(id),
+  );
 
   const erstelle = (modus: "neu" | "ergaenzen") => {
     if (modus === "neu") {
@@ -247,9 +317,12 @@ export function TagesberichtEditor({
     } else {
       editor.commands.insertContentAt(
         editor.state.doc.content.size,
-        abschnittsKnoten(fehlendeMeldungen),
+        abschnittsKnoten(neueMeldungen),
       );
     }
+    const ids = meldungen.map(({ id }) => id);
+    speichereBekannteMeldungen(ids);
+    setBekannteMeldungen(ids);
   };
 
   return (
@@ -268,6 +341,8 @@ export function TagesberichtEditor({
           fett={zustand.fett}
           liste={zustand.liste}
           leer={zustand.leer}
+          neueMeldungen={neueMeldungen.length}
+          onAktualisieren={() => erstelle("ergaenzen")}
           onNeuErstellen={() => erstelle("neu")}
         />
 
@@ -278,27 +353,20 @@ export function TagesberichtEditor({
                 ? "Keine Meldungen für den Tagesbericht vorhanden."
                 : "Noch kein Tagesbericht. Er wird aus den Meldungen zusammengestellt."}
             </p>
-            <Button disabled={meldungen.length === 0} onClick={() => erstelle("neu")}>
+            <Button
+              disabled={meldungen.length === 0}
+              onClick={() => erstelle("neu")}
+            >
               <SparklesIcon />
               Tagesbericht erstellen
             </Button>
           </div>
         )}
 
-        <EditorContent editor={editor} className={zustand.leer ? "hidden" : "pl-9"} />
-
-        {!zustand.leer && fehlendeMeldungen.length > 0 && (
-          <div className="flex items-center justify-between gap-2 rounded-xl bg-muted px-3 py-2 text-xs text-muted-foreground">
-            <span>
-              {fehlendeMeldungen.length === 1
-                ? "1 Meldung ist noch nicht im Bericht."
-                : `${fehlendeMeldungen.length} Meldungen sind noch nicht im Bericht.`}
-            </span>
-            <Button variant="outline" size="sm" onClick={() => erstelle("ergaenzen")}>
-              Ergänzen
-            </Button>
-          </div>
-        )}
+        <EditorContent
+          editor={editor}
+          className={zustand.leer ? "hidden" : "pl-9"}
+        />
       </div>
     </QuellenKontext.Provider>
   );
