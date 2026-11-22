@@ -9,7 +9,11 @@ import {
 } from "@tiptap/react";
 
 import { PRIORITY_COLORS, PriorityFlag } from "@/components/PriorityFlag";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { anzeigeTitel, type Meldung } from "@/lib/meldungen";
 
 /** Gutter icons shown per section before the rest collapses into a "+N" badge. */
@@ -54,8 +58,10 @@ function MeldungsInfo({ meldung }: { meldung: Meldung }) {
 }
 
 function QuellenIcon({ meldung }: { meldung: Meldung }) {
-  const { hervorgehobeneId, onHervorheben, onOeffnen } = useContext(QuellenKontext);
-  const Icon = meldung.vorgangstyp === "Besprechungsprotokoll" ? UsersIcon : FileTextIcon;
+  const { hervorgehobeneId, onHervorheben, onOeffnen } =
+    useContext(QuellenKontext);
+  const Icon =
+    meldung.vorgangstyp === "Besprechungsprotokoll" ? UsersIcon : FileTextIcon;
   const aktiv = hervorgehobeneId === meldung.id;
 
   return (
@@ -75,13 +81,19 @@ function QuellenIcon({ meldung }: { meldung: Meldung }) {
         >
           <Icon
             className="size-3.5 text-muted-foreground"
-            style={meldung.priority > 1 ? { color: PRIORITY_COLORS[meldung.priority] } : undefined}
+            style={
+              meldung.priority > 1
+                ? { color: PRIORITY_COLORS[meldung.priority] }
+                : undefined
+            }
           />
         </button>
       </HoverCardTrigger>
       <HoverCardContent side="left" align="start">
         <MeldungsInfo meldung={meldung} />
-        <p className="mt-2 text-muted-foreground">Klicken, um die Meldung zu öffnen.</p>
+        <p className="mt-2 text-muted-foreground">
+          Klicken, um die Meldung zu öffnen.
+        </p>
       </HoverCardContent>
     </HoverCard>
   );

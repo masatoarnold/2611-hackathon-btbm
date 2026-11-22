@@ -1,5 +1,12 @@
 import { useRef, useState, type ChangeEvent } from "react";
-import { CheckIcon, EyeIcon, FlagIcon, MailIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import {
+  CheckIcon,
+  EyeIcon,
+  FlagIcon,
+  MailIcon,
+  PlusIcon,
+  Trash2Icon,
+} from "lucide-react";
 
 import {
   AlertDialog,
@@ -27,7 +34,12 @@ import { PRIORITY_COLORS } from "@/components/PriorityFlag";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -57,8 +69,21 @@ const MELDUNGSDATUM = new Date().toLocaleDateString("de-DE", {
 const PROJEKT = "Wohnanlage Lindenhof – Haus B";
 
 const KEINE_AUSWAHL = "keine-auswahl";
-const PHASEN = ["Einrichtung", "Rohbau", "Dach/Fassade", "Ausbau", "Ausrüstung", "Außenanlagen"];
-const GEWERKE = ["Betonarbeiten", "Mauerarbeiten", "Stahlbau", "Holzbau", "Abdichtung"];
+const PHASEN = [
+  "Einrichtung",
+  "Rohbau",
+  "Dach/Fassade",
+  "Ausbau",
+  "Ausrüstung",
+  "Außenanlagen",
+];
+const GEWERKE = [
+  "Betonarbeiten",
+  "Mauerarbeiten",
+  "Stahlbau",
+  "Holzbau",
+  "Abdichtung",
+];
 
 type Lieferant = {
   id: string;
@@ -124,7 +149,9 @@ function VertragText({ vertrag }: { vertrag: Vertrag }) {
           <p className="leading-relaxed">{text}</p>
         </section>
       ))}
-      <p className="border-t pt-3 text-xs text-muted-foreground">{vertrag.unterschrift}</p>
+      <p className="border-t pt-3 text-xs text-muted-foreground">
+        {vertrag.unterschrift}
+      </p>
     </div>
   );
 }
@@ -224,20 +251,25 @@ function TermineListe() {
       </CardHeader>
       <ScrollArea className="min-h-0 flex-1">
         <CardContent className="flex flex-col gap-2">
-          {TERMINE_HEUTE_MOCK.map(({ id, titel, startStunde, dauerStunden, eigen }) => (
-            <div key={id} className="flex items-center gap-3 rounded-xl bg-background p-3">
-              <span className="w-14 shrink-0 text-sm font-medium tabular-nums">
-                {formatUhrzeit(startStunde)}
-              </span>
-              <div className="flex min-w-0 flex-col">
-                <span className="text-sm">{titel}</span>
-                <span className="text-xs text-muted-foreground">
-                  bis {formatUhrzeit(startStunde + dauerStunden)} Uhr ·{" "}
-                  {eigen ? "Eigener Termin" : "Fremdgewerk"}
+          {TERMINE_HEUTE_MOCK.map(
+            ({ id, titel, startStunde, dauerStunden, eigen }) => (
+              <div
+                key={id}
+                className="flex items-center gap-3 rounded-xl bg-background p-3"
+              >
+                <span className="w-14 shrink-0 text-sm font-medium tabular-nums">
+                  {formatUhrzeit(startStunde)}
                 </span>
+                <div className="flex min-w-0 flex-col">
+                  <span className="text-sm">{titel}</span>
+                  <span className="text-xs text-muted-foreground">
+                    bis {formatUhrzeit(startStunde + dauerStunden)} Uhr ·{" "}
+                    {eigen ? "Eigener Termin" : "Fremdgewerk"}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            ),
+          )}
         </CardContent>
       </ScrollArea>
     </Card>
@@ -251,7 +283,9 @@ function AufgabenListe() {
   const aufgabeUmschalten = (id: number) =>
     setAufgaben((aktuell) =>
       aktuell.map((aufgabe) =>
-        aufgabe.id === id ? { ...aufgabe, erledigt: !aufgabe.erledigt } : aufgabe,
+        aufgabe.id === id
+          ? { ...aufgabe, erledigt: !aufgabe.erledigt }
+          : aufgabe,
       ),
     );
 
@@ -261,7 +295,10 @@ function AufgabenListe() {
   const aufgabeHinzufuegen = () => {
     const titel = neueAufgabe.trim();
     if (!titel) return;
-    setAufgaben((aktuell) => [...aktuell, { id: Date.now(), titel, erledigt: false }]);
+    setAufgaben((aktuell) => [
+      ...aktuell,
+      { id: Date.now(), titel, erledigt: false },
+    ]);
     setNeueAufgabe("");
   };
 
@@ -274,7 +311,10 @@ function AufgabenListe() {
         <ScrollArea className="-mr-3 min-h-0 flex-1">
           <ul className="flex flex-col gap-2 pr-3">
             {aufgaben.map(({ id, titel, erledigt }) => (
-              <li key={id} className="flex items-start gap-3 rounded-xl bg-background p-3">
+              <li
+                key={id}
+                className="flex items-start gap-3 rounded-xl bg-background p-3"
+              >
                 <Checkbox
                   id={`aufgabe-${id}`}
                   className="mt-0.5 border-2 border-primary"
@@ -298,7 +338,9 @@ function AufgabenListe() {
               </li>
             ))}
             {aufgaben.length === 0 && (
-              <p className="text-sm text-muted-foreground">Keine Aufgaben vorhanden.</p>
+              <p className="text-sm text-muted-foreground">
+                Keine Aufgaben vorhanden.
+              </p>
             )}
           </ul>
         </ScrollArea>
@@ -337,7 +379,8 @@ const nachPrioritaet = (a: Meldung, b: Meldung) =>
   b.priority - a.priority || b.timestamp.localeCompare(a.timestamp);
 
 /** Completed reports: chronological, newest first. */
-const nachZeit = (a: Meldung, b: Meldung) => b.timestamp.localeCompare(a.timestamp);
+const nachZeit = (a: Meldung, b: Meldung) =>
+  b.timestamp.localeCompare(a.timestamp);
 
 const PRIORITAETEN = [1, 2, 3, 4, 5];
 
@@ -349,7 +392,10 @@ function PrioritySelect({
   onChange: (priority: number) => void;
 }) {
   return (
-    <Select value={String(value)} onValueChange={(next) => onChange(Number(next))}>
+    <Select
+      value={String(value)}
+      onValueChange={(next) => onChange(Number(next))}
+    >
       <SelectTrigger
         size="sm"
         hideIcon
@@ -370,7 +416,11 @@ function PrioritySelect({
       </SelectTrigger>
       <SelectContent position="popper" align="end" className="min-w-0">
         {PRIORITAETEN.map((priority) => (
-          <SelectItem key={priority} value={String(priority)} className="pr-7 text-xs">
+          <SelectItem
+            key={priority}
+            value={String(priority)}
+            className="pr-7 text-xs"
+          >
             <FlagIcon
               className="size-3.5"
               style={{
@@ -418,11 +468,15 @@ function MeldungsListe({
     <section className="flex flex-col gap-2">
       <h2 className="text-sm font-semibold text-primary">{ueberschrift}</h2>
       <Separator />
-      {meldungen.length === 0 && <p className="text-sm text-muted-foreground">Keine Meldungen.</p>}
+      {meldungen.length === 0 && (
+        <p className="text-sm text-muted-foreground">Keine Meldungen.</p>
+      )}
       {meldungen.map((meldung) => {
         const { id, content, attachments, priority } = meldung;
         const titel = anzeigeTitel(meldung);
-        const bilder = attachments.filter((anhang) => anhang.typ === "bild" && anhang.url);
+        const bilder = attachments.filter(
+          (anhang) => anhang.typ === "bild" && anhang.url,
+        );
         const aufgeklappt = aufgeklappteId === id;
         return (
           <div
@@ -448,7 +502,9 @@ function MeldungsListe({
               {onPrioritaet ? (
                 <PrioritySelect
                   value={priority}
-                  onChange={(neuePrioritaet) => onPrioritaet(meldung, neuePrioritaet)}
+                  onChange={(neuePrioritaet) =>
+                    onPrioritaet(meldung, neuePrioritaet)
+                  }
                 />
               ) : (
                 <span
@@ -479,7 +535,9 @@ function MeldungsListe({
             </div>
             {aufgeklappt && (
               <>
-                <p className="text-sm whitespace-pre-line text-muted-foreground">{content}</p>
+                <p className="text-sm whitespace-pre-line text-muted-foreground">
+                  {content}
+                </p>
                 {bilder.length > 0 && (
                   <ul className="grid grid-cols-3 gap-2">
                     {bilder.map((bild) => (
@@ -507,21 +565,29 @@ function MeldungsListe({
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" aria-label="Meldung löschen">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Meldung löschen"
+                          >
                             <Trash2Icon />
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Meldung löschen?</AlertDialogTitle>
+                            <AlertDialogTitle>
+                              Meldung löschen?
+                            </AlertDialogTitle>
                             <AlertDialogDescription>
-                              Möchtest du diese Meldung wirklich löschen? Diese Aktion kann nicht
-                              rückgängig gemacht werden.
+                              Möchtest du diese Meldung wirklich löschen? Diese
+                              Aktion kann nicht rückgängig gemacht werden.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => onLoeschen?.(meldung)}>
+                            <AlertDialogAction
+                              onClick={() => onLoeschen?.(meldung)}
+                            >
                               Löschen
                             </AlertDialogAction>
                           </AlertDialogFooter>
@@ -531,7 +597,9 @@ function MeldungsListe({
                   )}
                   {mitAktionen && (
                     <Button variant="outline" asChild>
-                      <a href={`${MELDUNG_WORKFLOW_PFAD}?id=${encodeURIComponent(id)}`}>
+                      <a
+                        href={`${MELDUNG_WORKFLOW_PFAD}?id=${encodeURIComponent(id)}`}
+                      >
                         Bearbeiten
                       </a>
                     </Button>
@@ -547,7 +615,9 @@ function MeldungsListe({
 }
 
 export function Cockpit() {
-  const [aufgeklappteMeldungId, setAufgeklappteMeldungId] = useState<string | null>("m-1");
+  const [aufgeklappteMeldungId, setAufgeklappteMeldungId] = useState<
+    string | null
+  >("m-1");
   const [aktivePhase, setAktivePhase] = useState(PHASEN[1] ?? "");
   const [aktivesGewerk, setAktivesGewerk] = useState(GEWERKE[1] ?? "");
   const [offenerVertragId, setOffenerVertragId] = useState<string | null>(null);
@@ -558,10 +628,16 @@ export function Cockpit() {
     aendere: aendereMeldung,
     loesche: loescheMeldung,
   } = useMeldungen();
-  const anstehend = meldungen.filter(({ status }) => status === "anstehend").sort(nachPrioritaet);
-  const abgeschlossen = meldungen.filter(({ status }) => status === "abgeschlossen").sort(nachZeit);
+  const anstehend = meldungen
+    .filter(({ status }) => status === "anstehend")
+    .sort(nachPrioritaet);
+  const abgeschlossen = meldungen
+    .filter(({ status }) => status === "abgeschlossen")
+    .sort(nachZeit);
   const [berichtMarkdown, setBerichtMarkdown] = useState("");
-  const [hervorgehobeneMeldungId, setHervorgehobeneMeldungId] = useState<string | null>(null);
+  const [hervorgehobeneMeldungId, setHervorgehobeneMeldungId] = useState<
+    string | null
+  >(null);
 
   const [mailOffen, setMailOffen] = useState(false);
   const [lieferanten, setLieferanten] = useState(LIEFERANTEN_MOCK);
@@ -594,7 +670,10 @@ export function Cockpit() {
     const datei = event.target.files?.[0];
     if (!datei) return;
     const id = crypto.randomUUID();
-    setLieferanten((aktuell) => [...aktuell, { id, titel: datei.name, beschreibung: "Vertrag" }]);
+    setLieferanten((aktuell) => [
+      ...aktuell,
+      { id, titel: datei.name, beschreibung: "Vertrag" },
+    ]);
     event.target.value = "";
   };
 
@@ -609,12 +688,15 @@ export function Cockpit() {
           <CardHeader className="flex shrink-0 flex-wrap items-center justify-between gap-2">
             <CardTitle>Meldungen</CardTitle>
             <span className="text-xs text-muted-foreground">
-              {anstehend.length} anstehend · {abgeschlossen.length} abgeschlossen
+              {anstehend.length} anstehend · {abgeschlossen.length}{" "}
+              abgeschlossen
             </span>
           </CardHeader>
           <ScrollArea className="min-h-0 flex-1">
             <CardContent className="flex flex-col gap-6">
-              {meldungenFehler && <p className="text-sm text-destructive">{meldungenFehler}</p>}
+              {meldungenFehler && (
+                <p className="text-sm text-destructive">{meldungenFehler}</p>
+              )}
               <MeldungsListe
                 ueberschrift="Anstehend"
                 meldungen={anstehend}
@@ -665,14 +747,21 @@ export function Cockpit() {
                   <Button
                     variant="outline"
                     disabled={!berichtMarkdown.trim()}
-                    onClick={() => markdownAlsPdfHerunterladen(berichtTitel, berichtMarkdown)}
+                    onClick={() =>
+                      markdownAlsPdfHerunterladen(berichtTitel, berichtMarkdown)
+                    }
                   >
                     PDF
                   </Button>
                   <Button
                     variant="outline"
                     disabled={!berichtMarkdown.trim()}
-                    onClick={() => markdownAlsWordHerunterladen(berichtTitel, berichtMarkdown)}
+                    onClick={() =>
+                      markdownAlsWordHerunterladen(
+                        berichtTitel,
+                        berichtMarkdown,
+                      )
+                    }
                   >
                     Word
                   </Button>
@@ -686,16 +775,27 @@ export function Cockpit() {
                   </Button>
                 </div>
               </TabsContent>
-              <TabsContent value="vertraege" className="flex h-full min-h-0 flex-col">
+              <TabsContent
+                value="vertraege"
+                className="flex h-full min-h-0 flex-col"
+              >
                 <div className="flex min-h-0 flex-col gap-3">
                   <div className="flex gap-2">
-                    <Input placeholder="Stichwortsuche" aria-label="Stichwortsuche" />
+                    <Input
+                      placeholder="Stichwortsuche"
+                      aria-label="Stichwortsuche"
+                    />
                     <Select value={aktivePhase} onValueChange={setAktivePhase}>
-                      <SelectTrigger aria-label="Phase" className="w-40 shrink-0">
+                      <SelectTrigger
+                        aria-label="Phase"
+                        className="w-40 shrink-0"
+                      >
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value={KEINE_AUSWAHL}>Keine Auswahl</SelectItem>
+                        <SelectItem value={KEINE_AUSWAHL}>
+                          Keine Auswahl
+                        </SelectItem>
                         {PHASEN.map((phase) => (
                           <SelectItem key={phase} value={phase}>
                             {phase}
@@ -703,12 +803,20 @@ export function Cockpit() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Select value={aktivesGewerk} onValueChange={setAktivesGewerk}>
-                      <SelectTrigger aria-label="Gewerk" className="w-40 shrink-0">
+                    <Select
+                      value={aktivesGewerk}
+                      onValueChange={setAktivesGewerk}
+                    >
+                      <SelectTrigger
+                        aria-label="Gewerk"
+                        className="w-40 shrink-0"
+                      >
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value={KEINE_AUSWAHL}>Keine Auswahl</SelectItem>
+                        <SelectItem value={KEINE_AUSWAHL}>
+                          Keine Auswahl
+                        </SelectItem>
                         {GEWERKE.map((gewerk) => (
                           <SelectItem key={gewerk} value={gewerk}>
                             {gewerk}
@@ -797,7 +905,9 @@ export function Cockpit() {
           {offenerVertrag && (
             <ScrollArea className="min-h-0 rounded-xl bg-background">
               <article className="flex flex-col gap-4 p-4">
-                <h1 className="text-lg font-semibold">{offenerVertrag.titel}</h1>
+                <h1 className="text-lg font-semibold">
+                  {offenerVertrag.titel}
+                </h1>
                 {offenerVertrag.beschreibung && (
                   <h2 className="text-sm font-semibold text-primary">
                     {offenerVertrag.beschreibung}

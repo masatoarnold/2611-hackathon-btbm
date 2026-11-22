@@ -67,7 +67,7 @@ type Report = Meldung;
 
 type View =
   | { name: "list" }
-  | { name: "new"; id?: string }
+  | { name: "new" }
   | { name: "detail"; id: string; from: "list" | "new" };
 
 const VORGANGSTYPEN = ["Meldung", "Besprechungsprotokoll"];
@@ -158,6 +158,15 @@ export function Satellite() {
   const changePriority = (id: string, priority: number) =>
     updateReport(id, { priority });
 
+  /** A new report only exists locally until it is confirmed; then it is saved. */
+  const [draft, setDraft] = useState<Report | null>(null);
+  const changeShownReport = (changes: Partial<Omit<Report, "id">>) => {
+    if (view.name !== "detail") return;
+    if (view.from === "new")
+      setDraft((current) => current && { ...current, ...changes });
+    else updateReport(view.id, changes);
+  };
+
   return (
     <div
       className={`${TOUCH_FRIENDLY_CLASSES} mx-auto flex min-h-dvh w-full max-w-md flex-col bg-white text-foreground [&_[data-slot=card]]:bg-white [&_[data-slot=input]]:bg-white [&_[data-slot=item]]:bg-white [&_[data-slot=select-trigger]]:bg-white [&_[data-slot=tabs-list]]:bg-white [&_[data-slot=textarea]]:bg-white`}
@@ -183,41 +192,48 @@ export function Satellite() {
           )}
           {view.name === "new" && (
             <NewReport
-              initialReport={reports.find((report) => report.id === view.id)}
-              onFinish={({ id, ...changes }) => {
-                if (view.id === undefined) addReport({ id, ...changes });
-                else aendere(id, changes, { sofort: true });
-                setView({ name: "detail", id, from: "new" });
+              initialReport={draft ?? undefined}
+              onFinish={(report) => {
+                setDraft(report);
+                setView({ name: "detail", id: report.id, from: "new" });
               }}
-              onCancel={() => setView({ name: "list" })}
+              onCancel={() => {
+                setDraft(null);
+                setView({ name: "list" });
+              }}
             />
           )}
           {view.name === "detail" && (
             <ReportDetail
-              report={reports.find((report) => report.id === view.id)}
+              report={
+                view.from === "new"
+                  ? (draft ?? undefined)
+                  : reports.find((report) => report.id === view.id)
+              }
               onBack={() =>
                 setView(
-                  view.from === "new"
-                    ? { name: "new", id: view.id }
-                    : { name: "list" },
+                  view.from === "new" ? { name: "new" } : { name: "list" },
                 )
               }
-              onChange={(content) => updateReport(view.id, { content })}
-              onChangeLocation={(location) =>
-                updateReport(view.id, { location })
-              }
+              onChange={(content) => changeShownReport({ content })}
+              onChangeLocation={(location) => changeShownReport({ location })}
               onChangeVorgangstyp={(vorgangstyp) =>
-                updateReport(view.id, { vorgangstyp })
+                changeShownReport({ vorgangstyp })
               }
               onChangeAttachments={(attachments) =>
-                updateReport(view.id, { attachments })
+                changeShownReport({ attachments })
               }
-              onChangePriority={(priority) => changePriority(view.id, priority)}
+              onChangePriority={(priority) => changeShownReport({ priority })}
               onDelete={() => {
-                deleteReport(view.id);
+                if (view.from === "new") setDraft(null);
+                else deleteReport(view.id);
                 setView({ name: "list" });
               }}
-              onConfirm={() => setView({ name: "list" })}
+              onConfirm={() => {
+                if (view.from === "new" && draft) addReport(draft);
+                setDraft(null);
+                setView({ name: "list" });
+              }}
             />
           )}
         </TabsContent>
@@ -414,6 +430,7 @@ function NewReport({
     onFinish({
       id: initialReport?.id ?? neueMeldungsId(),
       status: initialReport?.status ?? "anstehend",
+
       title:
         summary?.title ??
         initialReport?.title ??
@@ -857,7 +874,9 @@ function ReportDetail({
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                <AlertDialogAction onClick={onDelete}>Löschen</AlertDialogAction>
+                <AlertDialogAction onClick={onDelete}>
+                  Löschen
+                </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
