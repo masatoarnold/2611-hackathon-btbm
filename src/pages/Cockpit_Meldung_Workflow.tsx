@@ -1320,8 +1320,9 @@ function SubunternehmerEintrag({
               aria-label={`${vertrag} öffnen`}
               onClick={() => onOeffneVertrag(vertrag)}
             />
-            <AttachmentActions>
+            <AttachmentActions className="pr-2">
               <Checkbox
+                className="border-2 border-primary"
                 aria-label={`${vertrag} als betroffen auswählen`}
                 checked={betroffeneVertraege.includes(vertrag)}
                 onCheckedChange={() => onToggleVertrag(vertrag)}
