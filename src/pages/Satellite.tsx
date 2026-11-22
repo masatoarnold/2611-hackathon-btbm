@@ -20,6 +20,17 @@ import {
   Trash2Icon,
   XIcon,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -147,7 +158,7 @@ export function Satellite() {
 
   return (
     <div
-      className={`${TOUCH_FRIENDLY_CLASSES} mx-auto flex min-h-dvh w-full max-w-md flex-col bg-seite text-foreground [&_[data-slot=card]]:bg-white [&_[data-slot=input]]:bg-white [&_[data-slot=item]]:bg-white [&_[data-slot=select-trigger]]:bg-white [&_[data-slot=tabs-list]]:bg-white [&_[data-slot=textarea]]:bg-white`}
+      className={`${TOUCH_FRIENDLY_CLASSES} mx-auto flex min-h-dvh w-full max-w-md flex-col bg-white text-foreground [&_[data-slot=card]]:bg-white [&_[data-slot=input]]:bg-white [&_[data-slot=item]]:bg-white [&_[data-slot=select-trigger]]:bg-white [&_[data-slot=tabs-list]]:bg-white [&_[data-slot=textarea]]:bg-white`}
     >
       <Tabs defaultValue="reports" className="flex-1 gap-6 p-4">
         <TabsList>
@@ -277,7 +288,7 @@ function StickyActionBar({
 }) {
   return (
     <div
-      className={`sticky bottom-0 mt-auto -mx-4 -mb-4 flex items-center justify-between gap-2 border-t bg-seite p-4 ${className}`}
+      className={`sticky bottom-0 mt-auto -mx-4 -mb-4 flex items-center justify-between gap-2 border-t bg-white p-4 ${className}`}
     >
       {children}
     </div>
@@ -812,18 +823,40 @@ function ReportDetail({
       <StickyActionBar>
         <Button
           variant={showTranscript ? "default" : "outline"}
-          className="size-14"
+          size="icon-lg"
+          className="size-14 rounded-full"
           aria-label="Transkript"
           onClick={() => setShowTranscript((current) => !current)}
         >
-          <FileTextIcon className="size-7" />
+          <FileTextIcon className="size-6" />
         </Button>
         <div className="flex gap-2">
-          <Button variant="destructive" onClick={onDelete}>
-            <Trash2Icon />
-            Löschen
-          </Button>
-          <Button onClick={onConfirm}>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon-lg"
+                className="size-14 rounded-full"
+                aria-label="Meldung löschen"
+              >
+                <Trash2Icon className="size-6" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Meldung löschen?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Möchtest du diese Meldung wirklich löschen? Diese Aktion kann
+                  nicht rückgängig gemacht werden.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                <AlertDialogAction onClick={onDelete}>Löschen</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <Button className="h-14 rounded-full px-6" onClick={onConfirm}>
             <CheckIcon />
             Bestätigen
           </Button>
