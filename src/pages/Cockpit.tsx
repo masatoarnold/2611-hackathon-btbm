@@ -595,7 +595,7 @@ export function Cockpit() {
 
   return (
     <div className="flex h-screen min-w-5xl flex-col overflow-hidden bg-seite text-foreground">
-      <CockpitHeader datum={MELDUNGSDATUM} />
+      <CockpitHeader />
 
       <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,4fr)_minmax(0,6fr)_minmax(0,3fr)] gap-4 p-6">
         <Card className="min-h-0 overflow-hidden">

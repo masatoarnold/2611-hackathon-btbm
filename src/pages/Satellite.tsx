@@ -31,6 +31,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import logo from "@/sketch_1_probe.svg";
+
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -160,6 +162,9 @@ export function Satellite() {
     <div
       className={`${TOUCH_FRIENDLY_CLASSES} mx-auto flex min-h-dvh w-full max-w-md flex-col bg-white text-foreground [&_[data-slot=card]]:bg-white [&_[data-slot=input]]:bg-white [&_[data-slot=item]]:bg-white [&_[data-slot=select-trigger]]:bg-white [&_[data-slot=tabs-list]]:bg-white [&_[data-slot=textarea]]:bg-white`}
     >
+      <header className="flex justify-center px-4 pt-4">
+        <img src={logo} alt="Baustellen-App" className="h-12 w-auto" />
+      </header>
       <Tabs defaultValue="reports" className="flex-1 gap-6 p-4">
         <TabsList>
           <TabsTrigger value="reports">Meldungen</TabsTrigger>
